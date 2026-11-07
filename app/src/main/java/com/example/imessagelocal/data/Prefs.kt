@@ -3,9 +3,11 @@ package com.example.imessagelocal.data
 import android.content.Context
 
 data class Settings(
-    val darkMode: Int = 0, // 0 = system, 1 = light, 2 = dark
+    val darkMode: Int = 0,
     val fontScale: Float = 1f,
     val sound: Boolean = true,
+    val defaultSimSubscriptionId: Int = -1,
+    val notificationSoundUri: String? = null,
 )
 
 class Prefs(context: Context) {
@@ -15,6 +17,8 @@ class Prefs(context: Context) {
         darkMode = prefs.getInt("dark", 0),
         fontScale = prefs.getFloat("font", 1f),
         sound = prefs.getBoolean("sound", true),
+        defaultSimSubscriptionId = prefs.getInt("default_sim", -1),
+        notificationSoundUri = prefs.getString("notification_sound_uri", null),
     )
 
     fun save(s: Settings) {
@@ -22,6 +26,8 @@ class Prefs(context: Context) {
             .putInt("dark", s.darkMode)
             .putFloat("font", s.fontScale)
             .putBoolean("sound", s.sound)
+            .putInt("default_sim", s.defaultSimSubscriptionId)
+            .putString("notification_sound_uri", s.notificationSoundUri)
             .apply()
     }
 }

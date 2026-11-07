@@ -14,6 +14,7 @@ import android.telephony.SmsManager
 import androidx.core.content.ContextCompat
 import com.example.imessagelocal.data.AppDatabase
 import com.example.imessagelocal.data.ChatRepository
+import com.example.imessagelocal.data.Prefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -55,7 +56,8 @@ class SmsDeliverReceiver : BroadcastReceiver() {
                         context.contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
                     }
                     val conversation = repo.getConversation(conversationId)
-                    Notifier.notifyIncoming(context, conversation?.name ?: contactName ?: address, body, true, conversationId)
+                    val settings = Prefs(context).load()
+                    Notifier.notifyIncoming(context, conversation?.name ?: contactName ?: address, body, settings.sound, conversationId, settings.notificationSoundUri)
                 }
             } finally { pending.finish() }
         }

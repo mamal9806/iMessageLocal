@@ -88,7 +88,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 val conversation = repo.getConversation(conversationId)
                 val number = conversation?.phoneNumber.orEmpty()
                 if (number.isBlank()) { smsStatus = "برای این گفتگو شماره تلفن ثبت نشده است."; return@launch }
-                val subId = conversation?.simSubscriptionId
+                val chosenSubId = conversation?.simSubscriptionId?.takeIf { it >= 0 }
+                    ?: settings.defaultSimSubscriptionId.takeIf { it >= 0 }
+                val subId = chosenSubId
                 val manager = if (subId != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
                     SmsManager.getSmsManagerForSubscriptionId(subId)
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -137,7 +139,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val name = conversationName(conversationId)
         viewModelScope.launch {
             repo.addMessage(conversationId, clean, isOutgoing = false)
-            Notifier.notifyIncoming(getApplication(), name, clean, withSound = settings.sound)
+            Notifier.notifyIncoming(getApplication(), name, clean, withSound = settings.sound, soundUri = settings.notificationSoundUri)
         }
     }
 

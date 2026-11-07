@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -79,10 +80,10 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
         topBar = {
             TopAppBar(
                 title = { Text("Messages", fontWeight = FontWeight.Bold) },
-                navigationIcon = { TextButton(onClick = onSettings) { Text("Settings") } },
+                navigationIcon = { TextButton(modifier = Modifier.liquidGlass(), onClick = onSettings) { Text("Settings") } },
                 actions = {
-                    TextButton(onClick = { contactPicker.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)) }) { Text("Contacts") }
-                    TextButton(onClick = { newName = ""; newPhone = ""; showNew = true }) { Text("New") }
+                    TextButton(modifier = Modifier.liquidGlass(), onClick = { contactPicker.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)) }) { Text("Contacts") }
+                    TextButton(modifier = Modifier.liquidGlass(), onClick = { newName = ""; newPhone = ""; showNew = true }) { Text("New") }
                 },
             )
         },
@@ -94,7 +95,7 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                     query = it
                     vm.setQuery(it)
                 },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)),
                 placeholder = { Text("Search") },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
@@ -225,7 +226,7 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                     },
                 ) { Text("Create") }
             },
-            dismissButton = { TextButton(onClick = { showNew = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { showNew = false }) { Text("Cancel") } },
         )
     }
 
@@ -249,7 +250,7 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                     },
                 ) { Text("Save") }
             },
-            dismissButton = { TextButton(onClick = { incomingFor = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { incomingFor = null }) { Text("Cancel") } },
         )
     }
 
@@ -259,12 +260,12 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
             title = { Text("Delete ${c.name}?") },
             text = { Text("All messages in this conversation will be removed from this phone.") },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(modifier = Modifier.liquidGlass(), onClick = {
                     vm.deleteConversation(c.id)
                     deleteFor = null
                 }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { deleteFor = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { deleteFor = null }) { Text("Cancel") } },
         )
     }
 }

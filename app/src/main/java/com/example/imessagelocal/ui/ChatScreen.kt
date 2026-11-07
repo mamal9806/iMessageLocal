@@ -24,10 +24,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -50,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
@@ -97,8 +99,8 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
         topBar = {
             TopAppBar(
                 title = { Text(title) },
-                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
-                actions = { TextButton(onClick = {
+                navigationIcon = { TextButton(modifier = Modifier.liquidGlass(), onClick = onBack) { Text("‹  Back") } },
+                actions = { TextButton(modifier = Modifier.liquidGlass(), onClick = {
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
                         simOptions = try { context.getSystemService(SubscriptionManager::class.java).activeSubscriptionInfoList.orEmpty() } catch (_: SecurityException) { emptyList() }
                         showSimPicker = true
@@ -130,7 +132,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
-                        TextButton(onClick = { replyTo = null }) { Text("Cancel") }
+                        TextButton(modifier = Modifier.liquidGlass(), onClick = { replyTo = null }) { Text("Cancel") }
                     }
                 }
                 Row(
@@ -147,6 +149,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     )
                     Spacer(Modifier.width(8.dp))
                     Button(
+                        modifier = Modifier.liquidGlass(),
                         enabled = draft.isNotBlank(),
                         onClick = {
                             val text = draft.trim()
@@ -158,7 +161,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                                 permissionLauncher.launch(Manifest.permission.SEND_SMS)
                             }
                         },
-                    ) { Text("Send") }
+                    ) { Text("↑") }
                 }
             }
         },
@@ -184,10 +187,15 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     ) {
                         Surface(
                             shape = RoundedCornerShape(18.dp),
-                            color = if (mine) IOSBlue else MaterialTheme.colorScheme.surfaceVariant,
+                            color = if (mine) IOSBlue.copy(alpha = 0.92f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.88f),
                             modifier = Modifier
                                 .widthIn(max = 280.dp)
-                                .combinedClickable(onClick = {}, onLongClick = { menuFor = m }),
+                                .combinedClickable(onClick = {}, onLongClick = { menuFor = m })
+                                .border(
+                                    1.dp,
+                                    Brush.linearGradient(listOf(Color.White.copy(alpha = 0.78f), IOSBlue.copy(alpha = 0.45f), Color.White.copy(alpha = 0.22f))),
+                                    RoundedCornerShape(18.dp),
+                                ),
                         ) {
                             Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                                 m.replyPreview?.let {
@@ -203,11 +211,24 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                                     m.text,
                                     color = if (mine) Color.White else MaterialTheme.colorScheme.onSurface,
                                 )
-                                Text(
-                                    formatTime(m.createdAt) + (if (m.edited) "  edited" else "") + (if (mine) "  ·  ${m.deliveryState.lowercase()}" else ""),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = secondary,
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        formatTime(m.createdAt) + (if (m.edited) "  edited" else ""),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = secondary,
+                                    )
+                                    if (mine) {
+                                        Spacer(Modifier.width(5.dp))
+                                        val (mark, tint) = when (m.deliveryState) {
+                                            "DELIVERED" -> "✓✓" to Color(0xFF8FD3FF)
+                                            "SENT_TO_NETWORK" -> "✓" to Color.White.copy(alpha = 0.78f)
+                                            "SENDING", "LOCAL" -> "◷" to Color.White.copy(alpha = 0.78f)
+                                            "DELIVERY_FAILED", "FAILED", "NO_SERVICE", "RADIO_OFF" -> "!" to Color(0xFFFF6B64)
+                                            else -> "✓" to Color.White.copy(alpha = 0.78f)
+                                        }
+                                        Text(mark, color = tint, style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
                             }
                         }
                         DropdownMenu(
@@ -259,13 +280,13 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
             text = { Column {
                 if (simOptions.isEmpty()) Text("No active SIM was found. The system default SIM will be used.")
                 simOptions.forEachIndexed { index, info ->
-                    TextButton(onClick = { vm.setConversationSim(conversationId, info.subscriptionId); showSimPicker = false }) {
+                    TextButton(modifier = Modifier.liquidGlass(), onClick = { vm.setConversationSim(conversationId, info.subscriptionId); showSimPicker = false }) {
                         Text("SIM ${index + 1} · ${info.carrierName}")
                     }
                 }
-                TextButton(onClick = { vm.setConversationSim(conversationId, null); showSimPicker = false }) { Text("Use system default") }
+                TextButton(modifier = Modifier.liquidGlass(), onClick = { vm.setConversationSim(conversationId, null); showSimPicker = false }) { Text("Use system default") }
             } },
-            confirmButton = { TextButton(onClick = { showSimPicker = false }) { Text("Close") } },
+            confirmButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { showSimPicker = false }) { Text("Close") } },
         )
     }
 
@@ -281,12 +302,12 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(modifier = Modifier.liquidGlass(), onClick = {
                     vm.editMessage(m, editText)
                     editing = null
                 }) { Text("Save") }
             },
-            dismissButton = { TextButton(onClick = { editing = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { editing = null }) { Text("Cancel") } },
         )
     }
 }
