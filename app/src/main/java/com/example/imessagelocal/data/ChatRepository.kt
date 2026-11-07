@@ -7,8 +7,10 @@ class ChatRepository(private val dao: ChatDao) {
 
     fun messages(conversationId: Long) = dao.observeMessages(conversationId)
 
-    suspend fun createConversation(name: String): Long =
-        dao.insertConversation(ConversationEntity(name = name, avatarColor = AVATAR_COLORS.random()))
+    suspend fun createConversation(name: String, phoneNumber: String): Long =
+        dao.insertConversation(ConversationEntity(name = name, phoneNumber = phoneNumber, avatarColor = AVATAR_COLORS.random()))
+
+    suspend fun getConversation(id: Long) = dao.getConversation(id)
 
     suspend fun addMessage(
         conversationId: Long,

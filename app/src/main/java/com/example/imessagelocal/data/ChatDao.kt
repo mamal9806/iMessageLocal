@@ -12,7 +12,7 @@ interface ChatDao {
     @Query("SELECT * FROM conversations ORDER BY pinned DESC, updatedAt DESC")
     fun observeConversations(): Flow<List<ConversationEntity>>
 
-    @Query("SELECT * FROM conversations WHERE name LIKE '%' || :query || '%' ORDER BY pinned DESC, updatedAt DESC")
+    @Query("SELECT * FROM conversations WHERE name LIKE '%' || :query || '%' OR phoneNumber LIKE '%' || :query || '%' ORDER BY pinned DESC, updatedAt DESC")
     fun searchConversations(query: String): Flow<List<ConversationEntity>>
 
     @Query("SELECT * FROM conversations WHERE id = :id")

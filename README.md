@@ -16,12 +16,5 @@ Offline Android messenger (Kotlin, Jetpack Compose, Room, MVVM). No INTERNET per
 - Reading contacts from the phone book, photo/file attachments, backup and restore, real SMS.
 
 
-## Build APK with GitHub Actions from a phone
-
-1. Push this project to a GitHub repository on branch `main` or `master`.
-2. Open the repository's **Actions** tab.
-3. Select **Build Android APK** and run it with **Run workflow**, or push a commit.
-4. Open the completed workflow run and download the `iMessageLocal-debug-apk` artifact.
-5. Extract the ZIP artifact to get `app-debug.apk`.
-
-The workflow uses JDK 17 and Gradle 8.7. No Gradle Wrapper is required.
+## Real SMS sending
+This version adds outgoing SMS using Android's `SEND_SMS` runtime permission. New conversations require a phone number in international format (for example, +491701234567). SMS uses the device SIM and carrier network; it does not use internet, but carrier charges may apply. Android's call to SmsManager does not prove recipient delivery. Incoming SMS reception is not included in this build.

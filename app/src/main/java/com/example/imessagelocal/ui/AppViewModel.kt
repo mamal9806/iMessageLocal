@@ -1,6 +1,7 @@
 package com.example.imessagelocal.ui
 
 import android.app.Application
+import android.telephony.SmsManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -27,6 +28,9 @@ import kotlinx.coroutines.launch
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = ChatRepository(AppDatabase.get(app).chatDao())
     private val prefs = Prefs(app)
+
+    var smsStatus by mutableStateOf("")
+        private set
 
     var settings by mutableStateOf(prefs.load())
         private set
@@ -62,15 +66,41 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun conversationName(id: Long): String =
         everything.value.firstOrNull { it.id == id }?.name.orEmpty()
 
-    fun createConversation(name: String) {
+    fun createConversation(name: String, phoneNumber: String) {
         val clean = name.trim()
         if (clean.isEmpty()) return
-        viewModelScope.launch { openId.value = repo.createConversation(clean) }
+        viewModelScope.launch { openId.value = repo.createConversation(clean, phoneNumber.trim()) }
     }
 
     fun send(conversationId: Long, text: String, replyTo: MessageEntity?) {
         viewModelScope.launch { repo.addMessage(conversationId, text, isOutgoing = true, replyTo = replyTo) }
     }
+
+    fun sendSms(conversationId: Long, text: String, replyTo: MessageEntity?) {
+        val clean = text.trim()
+        if (clean.isEmpty()) return
+        viewModelScope.launch {
+            try {
+                val conversation = repo.getConversation(conversationId)
+                val number = conversation?.phoneNumber.orEmpty()
+                if (number.isBlank()) {
+                    smsStatus = "برای این گفتگو شماره تلفن ثبت نشده است."
+                    return@launch
+                }
+                @Suppress("DEPRECATION")
+                val manager = SmsManager.getDefault()
+                val parts = manager.divideMessage(clean)
+                if (parts.size > 1) manager.sendMultipartTextMessage(number, null, parts, null, null)
+                else manager.sendTextMessage(number, null, clean, null, null)
+                repo.addMessage(conversationId, clean, isOutgoing = true, replyTo = replyTo)
+                smsStatus = "پیام به برنامه پیامک اپراتور سپرده شد؛ تحویل قطعی تأیید نشده است."
+            } catch (e: Exception) {
+                smsStatus = "ارسال ناموفق: ${e.message ?: "خطای نامشخص"}"
+            }
+        }
+    }
+
+    fun clearSmsStatus() { smsStatus = "" }
 
     fun logIncoming(conversationId: Long, text: String) {
         val clean = text.trim()

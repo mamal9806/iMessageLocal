@@ -1,7 +1,5 @@
 package com.example.imessagelocal.ui
 
-import androidx.compose.runtime.saveable.rememberSaveable
-
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -33,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +50,7 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
     var query by rememberSaveable { mutableStateOf("") }
     var showNew by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
+    var newPhone by remember { mutableStateOf("") }
     var menuFor by remember { mutableStateOf<ConversationEntity?>(null) }
     var incomingFor by remember { mutableStateOf<ConversationEntity?>(null) }
     var incomingText by remember { mutableStateOf("") }
@@ -62,7 +62,7 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                 title = { Text("Messages", fontWeight = FontWeight.Bold) },
                 navigationIcon = { TextButton(onClick = onSettings) { Text("Settings") } },
                 actions = {
-                    TextButton(onClick = { newName = ""; showNew = true }) { Text("New") }
+                    TextButton(onClick = { newName = ""; newPhone = ""; showNew = true }) { Text("New") }
                 },
             )
         },
@@ -181,18 +181,26 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
             onDismissRequest = { showNew = false },
             title = { Text("New conversation") },
             text = {
-                OutlinedTextField(
-                    value = newName,
-                    onValueChange = { newName = it },
-                    singleLine = true,
-                    placeholder = { Text("Name") },
-                )
+                Column {
+                    OutlinedTextField(
+                        value = newName,
+                        onValueChange = { newName = it },
+                        singleLine = true,
+                        placeholder = { Text("Name") },
+                    )
+                    OutlinedTextField(
+                        value = newPhone,
+                        onValueChange = { newPhone = it },
+                        singleLine = true,
+                        placeholder = { Text("Phone number, e.g. +4917...") },
+                    )
+                }
             },
             confirmButton = {
                 TextButton(
-                    enabled = newName.isNotBlank(),
+                    enabled = newName.isNotBlank() && newPhone.isNotBlank(),
                     onClick = {
-                        vm.createConversation(newName)
+                        vm.createConversation(newName, newPhone)
                         showNew = false
                     },
                 ) { Text("Create") }

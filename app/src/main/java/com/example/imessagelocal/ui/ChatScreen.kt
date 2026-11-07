@@ -1,7 +1,11 @@
 package com.example.imessagelocal.ui
 
-import androidx.compose.runtime.saveable.rememberSaveable
-
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,12 +61,22 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     val title = vm.conversationName(conversationId)
     val listState = rememberLazyListState()
     val clipboard = LocalClipboardManager.current
-
+    val context = LocalContext.current
     var draft by rememberSaveable { mutableStateOf("") }
     var replyTo by remember { mutableStateOf<MessageEntity?>(null) }
     var menuFor by remember { mutableStateOf<MessageEntity?>(null) }
     var editing by remember { mutableStateOf<MessageEntity?>(null) }
     var editText by remember { mutableStateOf("") }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted && draft.isNotBlank()) {
+            vm.sendSms(conversationId, draft.trim(), replyTo)
+            draft = ""
+            replyTo = null
+        }
+    }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
@@ -76,6 +91,10 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
         },
         bottomBar = {
             Column(Modifier.navigationBarsPadding().imePadding()) {
+                if (vm.smsStatus.isNotBlank()) {
+                    Text(vm.smsStatus, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall)
+                }
                 replyTo?.let { r ->
                     Row(
                         Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
@@ -113,9 +132,14 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     Button(
                         enabled = draft.isNotBlank(),
                         onClick = {
-                            vm.send(conversationId, draft.trim(), replyTo)
-                            draft = ""
-                            replyTo = null
+                            val text = draft.trim()
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
+                                vm.sendSms(conversationId, text, replyTo)
+                                draft = ""
+                                replyTo = null
+                            } else {
+                                permissionLauncher.launch(Manifest.permission.SEND_SMS)
+                            }
                         },
                     ) { Text("Send") }
                 }

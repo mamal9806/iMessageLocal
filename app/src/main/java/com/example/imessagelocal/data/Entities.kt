@@ -9,6 +9,7 @@ import androidx.room.PrimaryKey
 data class ConversationEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
+    val phoneNumber: String = "",
     val avatarColor: Int,
     val pinned: Boolean = false,
     val lastText: String = "",
