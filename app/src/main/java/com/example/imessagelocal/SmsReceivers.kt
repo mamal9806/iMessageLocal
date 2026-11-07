@@ -7,7 +7,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.telephony.SmsManager
-import android.provider.Telephony
 import com.example.imessagelocal.data.AppDatabase
 import com.example.imessagelocal.data.ChatRepository
 import kotlinx.coroutines.CoroutineScope
