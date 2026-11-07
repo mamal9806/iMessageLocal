@@ -2,6 +2,9 @@ package com.example.imessagelocal.ui
 
 import android.app.Application
 import android.telephony.SmsManager
+import android.os.Build
+import android.app.PendingIntent
+import android.content.Intent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -80,21 +83,44 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val clean = text.trim()
         if (clean.isEmpty()) return
         viewModelScope.launch {
+            var recordedMessageId = -1L
             try {
                 val conversation = repo.getConversation(conversationId)
                 val number = conversation?.phoneNumber.orEmpty()
-                if (number.isBlank()) {
-                    smsStatus = "برای این گفتگو شماره تلفن ثبت نشده است."
-                    return@launch
+                if (number.isBlank()) { smsStatus = "برای این گفتگو شماره تلفن ثبت نشده است."; return@launch }
+                val subId = conversation?.simSubscriptionId
+                val manager = if (subId != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                    SmsManager.getSmsManagerForSubscriptionId(subId)
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    getApplication<Application>().getSystemService(SmsManager::class.java)
+                } else {
+                    @Suppress("DEPRECATION") SmsManager.getDefault()
                 }
-                @Suppress("DEPRECATION")
-                val manager = SmsManager.getDefault()
+                val messageId = repo.recordOutgoing(conversationId, clean, subId)
+                recordedMessageId = messageId
+                val sentIntent = PendingIntent.getBroadcast(
+                    getApplication(), messageId.toInt(),
+                    Intent(getApplication(), com.example.imessagelocal.SmsStatusReceiver::class.java)
+                        .setAction("com.example.imessagelocal.SMS_SENT").putExtra("message_id", messageId),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
                 val parts = manager.divideMessage(clean)
-                if (parts.size > 1) manager.sendMultipartTextMessage(number, null, parts, null, null)
-                else manager.sendTextMessage(number, null, clean, null, null)
-                repo.addMessage(conversationId, clean, isOutgoing = true, replyTo = replyTo)
-                smsStatus = "پیام به برنامه پیامک اپراتور سپرده شد؛ تحویل قطعی تأیید نشده است."
+                if (parts.size > 1) {
+                    val callbacks = ArrayList<PendingIntent>()
+                    parts.indices.forEach { index ->
+                        callbacks.add(PendingIntent.getBroadcast(getApplication(), messageId.toInt() + index,
+                            Intent(getApplication(), com.example.imessagelocal.SmsStatusReceiver::class.java)
+                                .setAction("com.example.imessagelocal.SMS_SENT").putExtra("message_id", messageId),
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                    }
+                    manager.sendMultipartTextMessage(number, null, parts, callbacks, null)
+                } else manager.sendTextMessage(number, null, clean, sentIntent, null)
+                smsStatus = "در انتظار نتیجه شبکه اپراتور…"
+            } catch (e: SecurityException) {
+                if (recordedMessageId >= 0L) repo.updateDelivery(recordedMessageId, "FAILED")
+                smsStatus = "مجوز ارسال پیامک داده نشده است."
             } catch (e: Exception) {
+                if (recordedMessageId >= 0L) repo.updateDelivery(recordedMessageId, "FAILED")
                 smsStatus = "ارسال ناموفق: ${e.message ?: "خطای نامشخص"}"
             }
         }
@@ -125,6 +151,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun togglePin(conversation: ConversationEntity) {
         viewModelScope.launch { repo.togglePin(conversation) }
     }
+
+    fun setConversationSim(id: Long, subId: Int?) { viewModelScope.launch { repo.setConversationSim(id, subId) } }
 
     fun deleteConversation(id: Long) {
         viewModelScope.launch {

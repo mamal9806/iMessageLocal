@@ -1,6 +1,16 @@
 package com.example.imessagelocal.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import android.app.role.RoleManager
+import android.os.Build
+import android.provider.Telephony
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.Button
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +37,9 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
     val s = vm.settings
+    val context = LocalContext.current
+    val roleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     Scaffold(
         topBar = {
@@ -44,6 +57,27 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Text("Messaging", style = MaterialTheme.typography.titleMedium)
+            Button(onClick = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val roleManager = context.getSystemService(RoleManager::class.java)
+                    if (roleManager.isRoleAvailable(RoleManager.ROLE_SMS) && !roleManager.isRoleHeld(RoleManager.ROLE_SMS)) {
+                        roleLauncher.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS))
+                    }
+                } else {
+                    roleLauncher.launch(android.content.Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT)
+                        .putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, context.packageName))
+                }
+            }, modifier = Modifier.fillMaxWidth()) { Text("Set as default SMS app") }
+            Text("Incoming SMS reception and SMS-provider integration require this app to hold the system SMS role.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (Build.VERSION.SDK_INT >= 33) {
+                Button(onClick = {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                        notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }, modifier = Modifier.fillMaxWidth()) { Text("Allow notifications") }
+            }
+
             Text("Appearance", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("System" to 0, "Light" to 1, "Dark" to 2).forEach { (label, value) ->

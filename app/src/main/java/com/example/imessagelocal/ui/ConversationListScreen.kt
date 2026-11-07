@@ -1,6 +1,11 @@
 package com.example.imessagelocal.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import android.content.Intent
+import android.provider.ContactsContract
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -55,6 +60,20 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
     var incomingFor by remember { mutableStateOf<ConversationEntity?>(null) }
     var incomingText by remember { mutableStateOf("") }
     var deleteFor by remember { mutableStateOf<ConversationEntity?>(null) }
+    val context = LocalContext.current
+    val contactPicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val uri = result.data?.data ?: return@rememberLauncherForActivityResult
+            val projection = arrayOf(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER)
+            context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    newName = cursor.getString(0).orEmpty()
+                    newPhone = cursor.getString(1).orEmpty()
+                    showNew = true
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -62,6 +81,7 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                 title = { Text("Messages", fontWeight = FontWeight.Bold) },
                 navigationIcon = { TextButton(onClick = onSettings) { Text("Settings") } },
                 actions = {
+                    TextButton(onClick = { contactPicker.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)) }) { Text("Contacts") }
                     TextButton(onClick = { newName = ""; newPhone = ""; showNew = true }) { Text("New") }
                 },
             )

@@ -17,6 +17,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val vm: AppViewModel = viewModel()
+            intent.getLongExtra("conversation_id", -1L).takeIf { it > 0L }?.let { vm.open(it) }
             val settings = vm.settings
             val dark = when (settings.darkMode) {
                 1 -> false

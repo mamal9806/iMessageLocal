@@ -2,6 +2,9 @@ package com.example.imessagelocal.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.telephony.SubscriptionManager
+import android.telephony.SubscriptionInfo
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -67,6 +70,14 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     var menuFor by remember { mutableStateOf<MessageEntity?>(null) }
     var editing by remember { mutableStateOf<MessageEntity?>(null) }
     var editText by remember { mutableStateOf("") }
+    var simOptions by remember { mutableStateOf<List<SubscriptionInfo>>(emptyList()) }
+    var showSimPicker by remember { mutableStateOf(false) }
+    val simPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            simOptions = try { context.getSystemService(SubscriptionManager::class.java).activeSubscriptionInfoList.orEmpty() } catch (_: SecurityException) { emptyList() }
+            showSimPicker = true
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -87,6 +98,12 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
             TopAppBar(
                 title = { Text(title) },
                 navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+                actions = { TextButton(onClick = {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                        simOptions = try { context.getSystemService(SubscriptionManager::class.java).activeSubscriptionInfoList.orEmpty() } catch (_: SecurityException) { emptyList() }
+                        showSimPicker = true
+                    } else simPermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+                }) { Text("SIM") } },
             )
         },
         bottomBar = {
@@ -187,7 +204,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                                     color = if (mine) Color.White else MaterialTheme.colorScheme.onSurface,
                                 )
                                 Text(
-                                    formatTime(m.createdAt) + if (m.edited) "  edited" else "",
+                                    formatTime(m.createdAt) + (if (m.edited) "  edited" else "") + (if (mine) "  ·  ${m.deliveryState.lowercase()}" else ""),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = secondary,
                                 )
@@ -233,6 +250,23 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 }
             }
         }
+    }
+
+    if (showSimPicker) {
+        AlertDialog(
+            onDismissRequest = { showSimPicker = false },
+            title = { Text("Choose SIM") },
+            text = { Column {
+                if (simOptions.isEmpty()) Text("No active SIM was found. The system default SIM will be used.")
+                simOptions.forEachIndexed { index, info ->
+                    TextButton(onClick = { vm.setConversationSim(conversationId, info.subscriptionId); showSimPicker = false }) {
+                        Text("SIM ${index + 1} · ${info.carrierName}")
+                    }
+                }
+                TextButton(onClick = { vm.setConversationSim(conversationId, null); showSimPicker = false }) { Text("Use system default") }
+            } },
+            confirmButton = { TextButton(onClick = { showSimPicker = false }) { Text("Close") } },
+        )
     }
 
     editing?.let { m ->

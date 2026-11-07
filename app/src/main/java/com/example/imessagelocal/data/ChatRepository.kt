@@ -12,6 +12,29 @@ class ChatRepository(private val dao: ChatDao) {
 
     suspend fun getConversation(id: Long) = dao.getConversation(id)
 
+    suspend fun receiveSms(address: String, body: String, timestamp: Long): Long {
+        val number = address.trim()
+        var conversation = dao.findByPhone(number)
+        if (conversation == null) {
+            val id = dao.insertConversation(ConversationEntity(name = number, phoneNumber = number, avatarColor = AVATAR_COLORS.random()))
+            conversation = dao.getConversation(id)!!
+        }
+        if (!dao.hasIncomingDuplicate(conversation.id, body, timestamp - 5000, timestamp + 5000)) {
+            dao.insertMessage(MessageEntity(conversationId = conversation.id, text = body, isOutgoing = false, createdAt = timestamp, deliveryState = "RECEIVED"))
+            dao.updateConversation(conversation.copy(lastText = body, updatedAt = timestamp))
+        }
+        return conversation.id
+    }
+
+    suspend fun recordOutgoing(conversationId: Long, text: String, subId: Int?): Long {
+        val id = dao.insertMessage(MessageEntity(conversationId = conversationId, text = text, isOutgoing = true, deliveryState = "SENDING", simSubscriptionId = subId))
+        dao.getConversation(conversationId)?.let { dao.updateConversation(it.copy(lastText = text, updatedAt = System.currentTimeMillis())) }
+        return id
+    }
+
+    suspend fun updateDelivery(id: Long, state: String) = dao.updateDeliveryState(id, state)
+    suspend fun setConversationSim(id: Long, subId: Int?) = dao.setConversationSim(id, subId)
+
     suspend fun addMessage(
         conversationId: Long,
         text: String,
