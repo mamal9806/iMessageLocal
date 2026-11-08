@@ -11,6 +11,7 @@ import android.telephony.SubscriptionInfo
 import android.telephony.SubscriptionManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -68,6 +69,7 @@ import com.example.imessagelocal.data.Settings
 @Composable
 fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
     val s = vm.settings
+    val english = s.language == 1
     val context = LocalContext.current
     var simOptions by remember { mutableStateOf<List<SubscriptionInfo>>(emptyList()) }
         var showAbout by remember { mutableStateOf(false) }
@@ -86,13 +88,13 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 20.dp, top = 18.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "بازگشت", tint = TextPrimary) }
-            Text("تنظیمات", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text(if (english) "Settings" else "تنظیمات", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp)) {
             SettingsHero()
-            SectionTitle("ظاهر برنامه")
+            SectionTitle(if (english) "Appearance" else "ظاهر برنامه")
             SettingsCard {
-                listOf(0 to "پیروی از سیستم", 1 to "روشن", 2 to "تاریک").forEach { (mode, label) ->
+                if (english) listOf(0 to "System default", 1 to "Light", 2 to "Dark") else listOf(0 to "پیروی از سیستم", 1 to "روشن", 2 to "تاریک").forEach { (mode, label) ->
                     Row(Modifier.fillMaxWidth().clickable { vm.updateSettings(s.copy(darkMode = mode)) }.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
                         RadioButton(selected = s.darkMode == mode, onClick = { vm.updateSettings(s.copy(darkMode = mode)) })
@@ -100,14 +102,14 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(14.dp))
-            SectionTitle("پالت رنگی")
+            SectionTitle(if (english) "Color palette" else "پالت رنگی")
             SettingsCard {
                 listOf(
-                    Triple(0, "اقیانوسی", Color(0xFF1769D2)),
-                    Triple(1, "یاسی", Color(0xFF7C3AED)),
-                    Triple(2, "زمردی", Color(0xFF0F9488)),
-                    Triple(3, "کهربایی", Color(0xFFB96A12)),
-                    Triple(4, "رز", Color(0xFFC13F78)),
+                    Triple(0, if (english) "Ocean" else "اقیانوسی", Color(0xFF1769D2)),
+                    Triple(1, if (english) "Lavender" else "یاسی", Color(0xFF7C3AED)),
+                    Triple(2, if (english) "Emerald" else "زمردی", Color(0xFF0F9488)),
+                    Triple(3, if (english) "Amber" else "کهربایی", Color(0xFFB96A12)),
+                    Triple(4, if (english) "Rose" else "رز", Color(0xFFC13F78)),
                 ).forEach { (theme, label, swatch) ->
                     Row(
                         Modifier.fillMaxWidth().clickable { vm.updateSettings(s.copy(accentTheme = theme)) }.padding(horizontal = 16.dp, vertical = 11.dp),
@@ -121,10 +123,10 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(18.dp))
-            SectionTitle("عمومی")
+            SectionTitle(if (english) "General" else "عمومی")
             SettingsCard {
                 Row(
-                    Modifier.fillMaxWidth().clickable { vm.updateSettings(s.copy(language = if (s.language == 0) 1 else 0)) }.padding(horizontal = 14.dp, vertical = 15.dp),
+                    Modifier.fillMaxWidth().clickable { vm.updateSettings(vm.settings.copy(language = if (vm.settings.language == 0) 1 else 0)) }.padding(horizontal = 14.dp, vertical = 15.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
@@ -140,16 +142,16 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                     }
                 }
                 DividerLine()
-                SettingRow(Icons.Default.VolumeUp, "صدای نوتیفیکیشن", if (s.sound) "صدای پیش‌فرض" else "خاموش") { vm.updateSettings(s.copy(sound = !s.sound)) }
+                SettingRow(Icons.Default.VolumeUp, if (english) "Notification sound" else "صدای نوتیفیکیشن", if (s.sound) (if (english) "On" else "صدای پیش‌فرض") else (if (english) "Off" else "خاموش")) { vm.updateSettings(s.copy(sound = !s.sound)) }
                 DividerLine()
-                SettingRow(Icons.Default.Phone, "سیم‌کارت پیش‌فرض", if (s.defaultSimSubscriptionId < 0) "پیش‌فرض سیستم" else "SIM انتخاب‌شده") {
+                SettingRow(Icons.Default.Phone, if (english) "Default SIM" else "سیم‌کارت پیش‌فرض", if (s.defaultSimSubscriptionId < 0) (if (english) "System default" else "پیش‌فرض سیستم") else (if (english) "Selected SIM" else "SIM انتخاب‌شده")) {
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) { simOptions = activeSims(context); showSim = true } else phoneLauncher.launch(Manifest.permission.READ_PHONE_STATE)
                 }
             }
             Spacer(Modifier.height(14.dp))
-            SectionTitle("اطلاعات بیشتر")
+            SectionTitle(if (english) "About" else "اطلاعات بیشتر")
             SettingsCard {
-                SettingRow(Icons.Default.Info, "درباره برنامه", "A SMS · نسخه 1.0.0") { showAbout = true }
+                SettingRow(Icons.Default.Info, if (english) "About the app" else "درباره برنامه", "A SMS · 1.0.0") { showAbout = true }
             }
             Spacer(Modifier.height(20.dp))
             Text("A SMS\nFast · Beautiful · Secure", color = TextSecondary, modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -189,7 +191,7 @@ private fun SectionTitle(text: String) { Text(text, color = TextSecondary, style
 
 @Composable
 private fun SettingsCard(content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = .35f), RoundedCornerShape(22.dp))) { content() }
+    Column(Modifier.fillMaxWidth().animateContentSize().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = .35f), RoundedCornerShape(22.dp))) { content() }
 }
 
 @Composable
