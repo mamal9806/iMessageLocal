@@ -50,7 +50,7 @@ fun AppRoot(vm: AppViewModel) {
             }
             if (openId == null && vm.settings.setupComplete) {
                 Box(Modifier.align(androidx.compose.ui.Alignment.BottomCenter)) {
-                    BottomNav(selected = tab, onSelect = { tab = it })
+                    BottomNav(selected = tab, english = vm.settings.language == 1, onSelect = { tab = it })
                 }
             }
         }
