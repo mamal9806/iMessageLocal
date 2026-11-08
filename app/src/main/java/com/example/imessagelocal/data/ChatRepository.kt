@@ -61,7 +61,7 @@ class ChatRepository(private val dao: ChatDao) {
         if (dao.hasImportedDuplicate(conversationId, body, outgoing, timestamp)) return
         dao.insertMessage(MessageEntity(conversationId = conversationId, text = body, isOutgoing = outgoing, createdAt = timestamp, deliveryState = if (outgoing) "SENT" else "RECEIVED"))
         val conversation = dao.getConversation(conversationId) ?: return
-        if (timestamp >= conversation.updatedAt) dao.updateConversation(conversation.copy(lastText = body, updatedAt = timestamp))
+        if (conversation.lastText.isBlank() || timestamp >= conversation.updatedAt) dao.updateConversation(conversation.copy(lastText = body, updatedAt = timestamp))
     }
 
     suspend fun recordOutgoing(conversationId: Long, text: String, subId: Int?): Long {
