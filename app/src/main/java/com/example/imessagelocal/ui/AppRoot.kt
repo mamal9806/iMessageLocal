@@ -26,6 +26,9 @@ fun AppRoot(vm: AppViewModel) {
     AppBackground(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
         Box(Modifier.fillMaxSize()) {
             when {
+                !vm.settings.setupComplete -> SetupScreen(vm) {
+                    vm.updateSettings(vm.settings.copy(setupComplete = true))
+                }
                 openId != null -> ChatScreen(vm, openId!!, onBack = { vm.open(null) })
                 tab == RootTab.Messages -> ConversationListScreen(vm, onOpen = vm::open, onSettings = { tab = RootTab.Settings })
                 tab == RootTab.Contacts -> ContactsScreen(vm, onOpen = vm::open)
