@@ -148,11 +148,11 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                         .padding(horizontal = 11.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Default.Message, "پیام پیش‌فرض", tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(17.dp))
+                    Icon(Icons.Default.Message, if (english) "Default message" else "پیام پیش‌فرض", tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(17.dp))
                     Text(if (vm.settings.language == 1) "Default message" else "پیام پیش‌فرض", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp))
                 }
                 androidx.compose.material3.DropdownMenu(expanded = showTemplates, onDismissRequest = { showTemplates = false }) {
-                    listOf("سلام، حالت چطوره؟", "لطفاً با من تماس بگیر.", "الان فرصت صحبت ندارم؛ بعداً تماس می‌گیرم.", "ممنون از لطفت.", "در راه هستم و به‌زودی می‌رسم.").forEach { template ->
+                    (if (english) listOf("Hi, how are you?", "Please call me.", "I can’t talk right now. I’ll call you later.", "Thanks a lot.", "I’m on my way and will be there soon.") else listOf("سلام، حالت چطوره؟", "لطفاً با من تماس بگیر.", "الان فرصت صحبت ندارم؛ بعداً تماس می‌گیرم.", "ممنون از لطفت.", "در راه هستم و به‌زودی می‌رسم.")).forEach { template ->
                         androidx.compose.material3.DropdownMenuItem(text = { Text(template) }, onClick = { draft = template; showTemplates = false })
                     }
                 }
@@ -175,7 +175,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.PushPin, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                                Text("پیام‌های سنجاق‌شده", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                                Text(if (english) "Pinned messages" else "پیام‌های سنجاق‌شده", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                             }
                             pinnedMessages.forEach { pinned ->
                                 Text(pinned.text, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
@@ -198,7 +198,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     Text(if (vm.settings.language == 1) "Replying to" else "پاسخ به", color = IOSBlue, style = MaterialTheme.typography.labelMedium)
                     Text(r.text, color = TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
                 }
-                TextButton(onClick = { replyTo = null }) { Text(if (vm.settings.language == 1) "Cancel" else if (english) "Cancel" else "لغو") }
+                TextButton(onClick = { replyTo = null }) { Text(if (english) "Cancel" else "لغو") }
             }
         }
         if (scheduledMessages.isNotEmpty()) {
@@ -276,7 +276,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                                 },
                             ),
                         contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.Default.Send, "ارسال؛ برای زمان‌بندی چند لحظه نگه دارید", tint = if (draft.isNotBlank()) MaterialTheme.colorScheme.onPrimary else TextSecondary) }
+                    ) { Icon(Icons.Default.Send, if (english) "Send; hold to schedule" else "ارسال؛ برای زمان‌بندی چند لحظه نگه دارید", tint = if (draft.isNotBlank()) MaterialTheme.colorScheme.onPrimary else TextSecondary) }
                     Text(if (vm.settings.language == 1) "Send" else "ارسال", color = if (draft.isNotBlank()) IOSBlue else TextSecondary, style = MaterialTheme.typography.labelSmall)
                 }
             }
@@ -318,7 +318,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                         Text(if (m.pinned) if (english) "Unpin message" else "برداشتن سنجاق" else if (english) "Pin message" else "سنجاق کردن پیام")
                     }
                     if (m.isOutgoing) {
-                        TextButton(onClick = { editText = m.text; editing = m; menuFor = null }) { Text("ویرایش") }
+                        TextButton(onClick = { editText = m.text; editing = m; menuFor = null }) { Text(if (english) "Edit" else "ویرایش") }
                     }
                     TextButton(onClick = { confirmDeleteMessage = m; menuFor = null }) {
                         Text(if (english) "Delete message" else "حذف پیام", color = MaterialTheme.colorScheme.error)
@@ -358,7 +358,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
             title = { Text(if (english) "Choose SIM" else "انتخاب سیم‌کارت") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    TextButton(onClick = { vm.setConversationSim(conversationId, null); showSimPicker = false }) { Text("سیم‌کارت پیش‌فرض سیستم") }
+                    TextButton(onClick = { vm.setConversationSim(conversationId, null); showSimPicker = false }) { Text(if (english) "System default SIM" else "سیم‌کارت پیش‌فرض سیستم") }
                     simOptions.forEachIndexed { index, info ->
                         TextButton(onClick = { vm.setConversationSim(conversationId, info.subscriptionId); showSimPicker = false }) {
                             Text("SIM ${index + 1} · ${info.carrierName ?: if (english) "Carrier" else "اپراتور"}")
