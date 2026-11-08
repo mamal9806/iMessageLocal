@@ -3,6 +3,8 @@ package com.example.imessagelocal.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.content.Intent
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.net.Uri
 import android.os.Build
 import android.telephony.SubscriptionInfo
@@ -34,6 +36,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,11 +63,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.imessagelocal.data.MessageEntity
+import java.util.Calendar
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     val messages by vm.messages.collectAsStateWithLifecycle()
+    val scheduledMessages by vm.scheduledMessages.collectAsStateWithLifecycle()
     val title = vm.conversationName(conversationId)
     val number = vm.conversationNumber(conversationId)
     val listState = rememberLazyListState()
@@ -76,6 +81,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     var editText by remember { mutableStateOf("") }
     var simOptions by remember { mutableStateOf<List<SubscriptionInfo>>(emptyList()) }
     var showSimPicker by remember { mutableStateOf(false) }
+    var showTemplates by remember { mutableStateOf(false) }
 
     val simPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
@@ -130,10 +136,29 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 TextButton(onClick = { replyTo = null }) { Text("لغو") }
             }
         }
+        if (scheduledMessages.isNotEmpty()) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                scheduledMessages.forEach { item ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Schedule, null, tint = IOSBlue, modifier = Modifier.size(16.dp))
+                        Text("  ${java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(java.util.Date(item.scheduledAt))} · ${item.text.take(28)}", color = TextSecondary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f), maxLines = 1)
+                        TextButton(onClick = { vm.cancelScheduledSms(item.id) }) { Text("لغو", color = MaterialTheme.colorScheme.error) }
+                    }
+                }
+            }
+        }
         Row(
             Modifier.fillMaxWidth().imePadding().padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
+            Box {
+                TextButton(onClick = { showTemplates = true }, modifier = Modifier.padding(bottom = 4.dp)) { Text("قالب", color = IOSBlue) }
+                androidx.compose.material3.DropdownMenu(expanded = showTemplates, onDismissRequest = { showTemplates = false }) {
+                    listOf("سلام، حالت چطوره؟", "لطفاً با من تماس بگیر.", "الان فرصت صحبت ندارم؛ بعداً تماس می‌گیرم.", "ممنون از لطفت.", "در راه هستم و به‌زودی می‌رسم.").forEach { template ->
+                        androidx.compose.material3.DropdownMenuItem(text = { Text(template) }, onClick = { draft = template; showTemplates = false })
+                    }
+                }
+            }
             OutlinedButton(
                 onClick = {
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
@@ -162,6 +187,27 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 ),
             )
             Spacer(Modifier.width(8.dp))
+            IconButton(
+                onClick = {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+                        smsPermission.launch(Manifest.permission.SEND_SMS)
+                    } else {
+                        val initial = (Calendar.getInstance()).apply { add(Calendar.MINUTE, 5) }
+                        DatePickerDialog(context, { _, year, month, day ->
+                            val picked = (initial.clone() as Calendar).apply { set(Calendar.YEAR, year); set(Calendar.MONTH, month); set(Calendar.DAY_OF_MONTH, day) }
+                            TimePickerDialog(context, { _, hour, minute ->
+                                picked.set(Calendar.HOUR_OF_DAY, hour); picked.set(Calendar.MINUTE, minute); picked.set(Calendar.SECOND, 0)
+                                if (picked.timeInMillis > System.currentTimeMillis()) {
+                                    vm.scheduleSms(conversationId, draft, picked.timeInMillis)
+                                    draft = ""
+                                }
+                            }, initial.get(Calendar.HOUR_OF_DAY), initial.get(Calendar.MINUTE), true).show()
+                        }, initial.get(Calendar.YEAR), initial.get(Calendar.MONTH), initial.get(Calendar.DAY_OF_MONTH)).show()
+                    }
+                },
+                enabled = draft.isNotBlank(),
+                modifier = Modifier.size(44.dp),
+            ) { Icon(Icons.Default.Schedule, "زمان‌بندی پیامک", tint = IOSBlue) }
             IconButton(
                 onClick = {
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
