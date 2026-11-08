@@ -135,6 +135,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun markConversationRead(id: Long) {
+        viewModelScope.launch { repo.markConversationRead(id) }
+    }
+
     fun clearSmsStatus() { smsStatus = "" }
 
     fun logIncoming(conversationId: Long, text: String) {
