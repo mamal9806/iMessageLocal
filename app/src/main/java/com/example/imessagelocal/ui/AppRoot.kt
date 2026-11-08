@@ -1,6 +1,12 @@
 package com.example.imessagelocal.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,14 +31,22 @@ fun AppRoot(vm: AppViewModel) {
 
     AppBackground(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
         Box(Modifier.fillMaxSize()) {
-            when {
-                !vm.settings.setupComplete -> SetupScreen(vm) {
-                    vm.updateSettings(vm.settings.copy(setupComplete = true))
+            AnimatedContent(
+                targetState = Triple(vm.settings.setupComplete, openId, tab),
+                transitionSpec = {
+                    (fadeIn(tween(220)) + slideInHorizontally(tween(220)) { it / 18 }) togetherWith fadeOut(tween(150))
+                },
+                label = "screen_transition",
+            ) { (setupComplete, conversationId, selectedTab) ->
+                when {
+                    !setupComplete -> SetupScreen(vm) {
+                        vm.updateSettings(vm.settings.copy(setupComplete = true))
+                    }
+                    conversationId != null -> ChatScreen(vm, conversationId, onBack = { vm.open(null) })
+                    selectedTab == RootTab.Messages -> ConversationListScreen(vm, onOpen = vm::open, onSettings = { tab = RootTab.Settings })
+                    selectedTab == RootTab.Contacts -> ContactsScreen(vm, onOpen = vm::open)
+                    else -> SettingsScreen(vm, onBack = { tab = RootTab.Messages })
                 }
-                openId != null -> ChatScreen(vm, openId!!, onBack = { vm.open(null) })
-                tab == RootTab.Messages -> ConversationListScreen(vm, onOpen = vm::open, onSettings = { tab = RootTab.Settings })
-                tab == RootTab.Contacts -> ContactsScreen(vm, onOpen = vm::open)
-                else -> SettingsScreen(vm, onBack = { tab = RootTab.Messages })
             }
             if (openId == null) {
                 Box(Modifier.align(androidx.compose.ui.Alignment.BottomCenter)) {
