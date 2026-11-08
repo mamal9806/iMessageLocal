@@ -2,6 +2,7 @@ package com.example.imessagelocal.ui
 
 import android.app.Application
 import android.telephony.SmsManager
+import android.provider.Telephony
 import android.os.Build
 import android.app.PendingIntent
 import android.content.Intent
@@ -136,6 +137,41 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: Exception) {
                 if (recordedMessageId >= 0L) repo.updateDelivery(recordedMessageId, "FAILED")
                 smsStatus = "ارسال ناموفق: ${e.message ?: "خطای نامشخص"}"
+            }
+        }
+    }
+
+    fun restorePreviousMessages() {
+        val context = getApplication<Application>()
+        if (Telephony.Sms.getDefaultSmsPackage(context) != context.packageName) {
+            smsStatus = "برای بازیابی پیام‌های قبلی، ابتدا A SMS را برنامه پیش‌فرض پیامک کنید."
+            return
+        }
+        viewModelScope.launch {
+            try {
+                var imported = 0
+                val projection = arrayOf(Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms.TYPE)
+                context.contentResolver.query(Telephony.Sms.CONTENT_URI, projection, null, null, Telephony.Sms.DATE + " ASC")?.use { cursor ->
+                    val addressCol = cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)
+                    val bodyCol = cursor.getColumnIndexOrThrow(Telephony.Sms.BODY)
+                    val dateCol = cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)
+                    val typeCol = cursor.getColumnIndexOrThrow(Telephony.Sms.TYPE)
+                    while (cursor.moveToNext()) {
+                        val type = cursor.getInt(typeCol)
+                        if (type == Telephony.Sms.MESSAGE_TYPE_INBOX || type == Telephony.Sms.MESSAGE_TYPE_SENT ||
+                            type == Telephony.Sms.MESSAGE_TYPE_OUTBOX || type == Telephony.Sms.MESSAGE_TYPE_FAILED ||
+                            type == Telephony.Sms.MESSAGE_TYPE_QUEUED) {
+                            repo.importSms(cursor.getString(addressCol).orEmpty(), cursor.getString(bodyCol).orEmpty(),
+                                cursor.getLong(dateCol), type != Telephony.Sms.MESSAGE_TYPE_INBOX)
+                            imported++
+                        }
+                    }
+                }
+                smsStatus = "بازیابی پیام‌ها انجام شد. $imported پیام بررسی شد."
+            } catch (e: SecurityException) {
+                smsStatus = "دسترسی خواندن پیامک‌ها داده نشده است."
+            } catch (e: Exception) {
+                smsStatus = "بازیابی ناموفق بود: ${e.message ?: "خطای نامشخص"}"
             }
         }
     }
