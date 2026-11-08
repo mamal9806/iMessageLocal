@@ -118,8 +118,8 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "بازگشت", tint = TextPrimary) }
-            Box(Modifier.size(42.dp).clip(CircleShape).background(Color(0xFF3574B8)), contentAlignment = Alignment.Center) {
-                Text(title.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold)
+            Box(Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                Text(title.take(1).uppercase(), color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
             }
             Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
                 Text(title, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -217,7 +217,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     } else smsPermission.launch(Manifest.permission.SEND_SMS)
                 },
                 enabled = draft.isNotBlank(),
-                modifier = Modifier.size(52.dp).clip(CircleShape).background(if (draft.isNotBlank()) IOSBlue else Color.White.copy(alpha = .08f)),
+                modifier = Modifier.size(52.dp).clip(CircleShape).background(if (draft.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
             ) { Icon(Icons.Default.Send, "ارسال", tint = Color.White) }
         }
     }
@@ -280,10 +280,10 @@ private fun MessageBubble(m: MessageEntity, onLongPress: () -> Unit) {
             Box(
                 Modifier
                     .clip(shape)
-                    .background(if (m.isOutgoing) BrushBubbleBlue else BrushBubbleGray)
+                    .background(if (m.isOutgoing) androidx.compose.ui.graphics.Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.78f))) else androidx.compose.ui.graphics.Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surfaceVariant)))
                     .padding(horizontal = 16.dp, vertical = 11.dp),
             ) {
-                Text(m.text, color = Color.White, style = MaterialTheme.typography.bodyLarge)
+                Text(m.text, color = if (m.isOutgoing) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge)
             }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)) {
                 Text(formatTime(m.createdAt), color = TextSecondary, style = MaterialTheme.typography.labelSmall)
@@ -294,7 +294,5 @@ private fun MessageBubble(m: MessageEntity, onLongPress: () -> Unit) {
     }
 }
 
-private val BrushBubbleBlue = androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF087AF3), Color(0xFF1551C7)))
-private val BrushBubbleGray = androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF202A40), Color(0xFF161D30)))
 private fun deliveryLabel(s: String) = when (s) { "SENDING" -> "در حال ارسال"; "SENT_TO_NETWORK" -> "ارسال شد"; "DELIVERED" -> "تحویل شد"; "DELIVERY_FAILED", "FAILED" -> "ناموفق"; "RECEIVED" -> "دریافت شد"; else -> "" }
 
