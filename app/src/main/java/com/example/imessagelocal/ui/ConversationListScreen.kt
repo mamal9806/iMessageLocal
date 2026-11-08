@@ -183,6 +183,21 @@ private fun ConversationRow(c: ConversationEntity, onClick: () -> Unit, onLongCl
             Spacer(Modifier.height(3.dp))
             Text(c.lastText.ifBlank { c.phoneNumber }, color = TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
+        if (c.unreadCount > 0) {
+            Box(
+                Modifier.padding(start = 10.dp).size(26.dp).clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    if (c.unreadCount > 99) "99+" else c.unreadCount.toString(),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+            }
+        }
     }
 }
 
