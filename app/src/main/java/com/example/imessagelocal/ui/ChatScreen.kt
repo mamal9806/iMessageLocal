@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,6 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -89,6 +91,8 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     var simOptions by remember { mutableStateOf<List<SubscriptionInfo>>(emptyList()) }
     var showSimPicker by remember { mutableStateOf(false) }
     var showTemplates by remember { mutableStateOf(false) }
+    var showStickerPicker by remember { mutableStateOf(false) }
+    val english = vm.settings.language == 1
 
     val openSchedulePicker = {
         val initial = Calendar.getInstance().apply { add(Calendar.MINUTE, 5) }
@@ -131,6 +135,9 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
             Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
                 Text(title, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text("پیامک", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
+            }
+            IconButton(onClick = { showStickerPicker = true }) {
+                Icon(Icons.Default.EmojiEmotions, if (english) "Stickers" else "استیکرها", tint = IOSBlue)
             }
             Box {
                 Row(
@@ -275,6 +282,27 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
         }
     }
 
+    if (showStickerPicker) {
+        val stickers = listOf("😀", "😂", "🥰", "😍", "😎", "😭", "🤔", "👍", "❤️", "🎉", "🔥", "🙏")
+        AlertDialog(
+            onDismissRequest = { showStickerPicker = false },
+            title = { Text(if (english) "Choose a sticker" else "انتخاب استیکر") },
+            text = {
+                androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                    columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(4),
+                    modifier = Modifier.height(190.dp),
+                ) {
+                    items(stickers.size) { index ->
+                        TextButton(onClick = { draft = stickers[index]; showStickerPicker = false }) {
+                            Text(stickers[index], fontSize = 30.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showStickerPicker = false }) { Text(if (english) "Close" else "بستن") } },
+        )
+    }
+
     menuFor?.let { m ->
         AlertDialog(
             onDismissRequest = { menuFor = null },
@@ -358,9 +386,24 @@ private fun MessageBubble(m: MessageEntity, onLongPress: () -> Unit) {
             modifier = Modifier.widthIn(max = 300.dp).combinedClickable(onClick = {}, onLongClick = onLongPress),
             horizontalAlignment = if (m.isOutgoing) Alignment.Start else Alignment.End,
         ) {
+            val isSticker = m.text.codePointCount(0, m.text.length) <= 4 && m.text.any { it.code > 0x1F000 }
+            var stickerVisible by remember(m.id) { mutableStateOf(false) }
+            LaunchedEffect(m.id) { stickerVisible = true }
+            val stickerScale by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (stickerVisible) 1f else 0.45f,
+                animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.52f, stiffness = 360f),
+                label = "sticker_pop",
+            )
             Box(
                 Modifier
-                    .clip(shape)
+                    .graphicsLayer {
+                        if (isSticker) {
+                            scaleX = stickerScale
+                            scaleY = stickerScale
+                            rotationZ = (1f - stickerScale) * -12f
+                        }
+                    }
+                    .clip(if (isSticker) RoundedCornerShape(18.dp) else shape)
                     .background(bubbleColor)
                     .border(
                         width = if (m.isOutgoing) 1.4.dp else 0.7.dp,
@@ -369,7 +412,7 @@ private fun MessageBubble(m: MessageEntity, onLongPress: () -> Unit) {
                     )
                     .padding(horizontal = 16.dp, vertical = 11.dp),
             ) {
-                Text(m.text, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge)
+                Text(m.text, color = MaterialTheme.colorScheme.onSurface, style = if (isSticker) MaterialTheme.typography.displaySmall.copy(fontSize = 48.sp) else MaterialTheme.typography.bodyLarge)
             }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)) {
                 if (m.pinned) Icon(Icons.Default.PushPin, null, tint = accent, modifier = Modifier.size(12.dp))
