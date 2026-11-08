@@ -54,7 +54,10 @@ class ChatRepository(private val dao: ChatDao) {
     suspend fun importSms(address: String, body: String, timestamp: Long, outgoing: Boolean) {
         val number = address.trim()
         if (number.isBlank() || body.isBlank()) return
-        val conversationId = createConversation(number, number)
+        val existing = dao.getAllConversations().firstOrNull {
+            it.phoneNumber.isNotBlank() && PhoneNumberUtils.compare(it.phoneNumber, number)
+        }
+        val conversationId = existing?.id ?: createConversation(number, number)
         if (dao.hasImportedDuplicate(conversationId, body, outgoing, timestamp)) return
         dao.insertMessage(MessageEntity(conversationId = conversationId, text = body, isOutgoing = outgoing, createdAt = timestamp, deliveryState = if (outgoing) "SENT" else "RECEIVED"))
         val conversation = dao.getConversation(conversationId) ?: return
