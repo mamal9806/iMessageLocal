@@ -233,6 +233,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { repo.deleteMessage(message) }
     }
 
+    fun toggleMessagePin(message: MessageEntity) {
+        viewModelScope.launch { repo.toggleMessagePin(message) }
+    }
+
     fun togglePin(conversation: ConversationEntity) {
         viewModelScope.launch { repo.togglePin(conversation) }
     }
