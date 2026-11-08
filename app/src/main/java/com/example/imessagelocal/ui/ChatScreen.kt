@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -82,6 +83,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     var draft by rememberSaveable { mutableStateOf("") }
     var replyTo by remember { mutableStateOf<MessageEntity?>(null) }
     var menuFor by remember { mutableStateOf<MessageEntity?>(null) }
+    var confirmDeleteMessage by remember { mutableStateOf<MessageEntity?>(null) }
     var editing by remember { mutableStateOf<MessageEntity?>(null) }
     var editText by remember { mutableStateOf("") }
     var simOptions by remember { mutableStateOf<List<SubscriptionInfo>>(emptyList()) }
@@ -154,6 +156,25 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
 
         Box(Modifier.fillMaxSize().weight(1f)) {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 12.dp, bottom = 12.dp)) {
+                val pinnedMessages = messages.filter { it.pinned }
+                if (pinnedMessages.isNotEmpty()) {
+                    item(key = "pinned_messages_header") {
+                        Column(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f))
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.PushPin, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                Text("پیام‌های سنجاق‌شده", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                            }
+                            pinnedMessages.forEach { pinned ->
+                                Text(pinned.text, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
+                            }
+                        }
+                    }
+                }
                 items(messages, key = { it.id }) { m ->
                     MessageBubble(m, onLongPress = { menuFor = m })
                 }
@@ -257,17 +278,38 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     menuFor?.let { m ->
         AlertDialog(
             onDismissRequest = { menuFor = null },
-            title = { Text("پیام") },
-            text = { Text(m.text) },
+            title = { Text("عملیات پیام") },
+            text = { Text(m.text, maxLines = 5, overflow = TextOverflow.Ellipsis) },
             confirmButton = {
                 TextButton(onClick = { replyTo = m; menuFor = null }) { Text("پاسخ") }
             },
             dismissButton = {
-                Row {
-                    TextButton(onClick = { editText = m.text; editing = m; menuFor = null }) { Text("ویرایش") }
-                    TextButton(onClick = { vm.deleteMessage(m); menuFor = null }) { Text("حذف", color = MaterialTheme.colorScheme.error) }
+                Column(horizontalAlignment = Alignment.End) {
+                    TextButton(onClick = { vm.toggleMessagePin(m); menuFor = null }) {
+                        Text(if (m.pinned) "برداشتن سنجاق" else "سنجاق کردن پیام")
+                    }
+                    if (m.isOutgoing) {
+                        TextButton(onClick = { editText = m.text; editing = m; menuFor = null }) { Text("ویرایش") }
+                    }
+                    TextButton(onClick = { confirmDeleteMessage = m; menuFor = null }) {
+                        Text("حذف پیام", color = MaterialTheme.colorScheme.error)
+                    }
                 }
             },
+        )
+    }
+
+    confirmDeleteMessage?.let { m ->
+        AlertDialog(
+            onDismissRequest = { confirmDeleteMessage = null },
+            title = { Text("حذف پیام؟") },
+            text = { Text("این پیام از گفتگوی داخل A SMS حذف می‌شود. پیامک ارسال‌شده از گوشی گیرنده حذف نخواهد شد.") },
+            confirmButton = {
+                TextButton(onClick = { vm.deleteMessage(m); confirmDeleteMessage = null }) {
+                    Text("حذف", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmDeleteMessage = null }) { Text("انصراف") } },
         )
     }
 
@@ -330,6 +372,7 @@ private fun MessageBubble(m: MessageEntity, onLongPress: () -> Unit) {
                 Text(m.text, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge)
             }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)) {
+                if (m.pinned) Icon(Icons.Default.PushPin, null, tint = accent, modifier = Modifier.size(12.dp))
                 Text(formatTime(m.createdAt), color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                 if (m.isOutgoing) Text("  ${deliveryLabel(m.deliveryState)}", color = if (m.deliveryState == "DELIVERED") SuccessGreen else TextSecondary, style = MaterialTheme.typography.labelSmall)
                 if (m.edited) Text(" · ویرایش‌شده", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
