@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Message
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -130,8 +131,15 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 Text("پیامک", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
             }
             Box {
-                IconButton(onClick = { showTemplates = true }) {
-                    Icon(Icons.Default.Message, "قالب‌های آماده", tint = IOSBlue)
+                Row(
+                    Modifier.clip(RoundedCornerShape(20.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f))
+                        .clickable { showTemplates = true }
+                        .padding(horizontal = 11.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Default.Message, "پیام پیش‌فرض", tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(17.dp))
+                    Text(if (vm.settings.language == 1) "Default message" else "پیام پیش‌فرض", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp))
                 }
                 androidx.compose.material3.DropdownMenu(expanded = showTemplates, onDismissRequest = { showTemplates = false }) {
                     listOf("سلام، حالت چطوره؟", "لطفاً با من تماس بگیر.", "الان فرصت صحبت ندارم؛ بعداً تماس می‌گیرم.", "ممنون از لطفت.", "در راه هستم و به‌زودی می‌رسم.").forEach { template ->
@@ -158,10 +166,10 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
         replyTo?.let { r ->
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("پاسخ به", color = IOSBlue, style = MaterialTheme.typography.labelMedium)
+                    Text(if (vm.settings.language == 1) "Replying to" else "پاسخ به", color = IOSBlue, style = MaterialTheme.typography.labelMedium)
                     Text(r.text, color = TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
                 }
-                TextButton(onClick = { replyTo = null }) { Text("لغو") }
+                TextButton(onClick = { replyTo = null }) { Text(if (vm.settings.language == 1) "Cancel" else "لغو") }
             }
         }
         if (scheduledMessages.isNotEmpty()) {
@@ -185,30 +193,6 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(7.dp),
         ) {
-            // Quick actions are grouped above the editor so they are easy to spot and tap.
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Row(
-                    Modifier.clip(RoundedCornerShape(18.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .clickable {
-                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
-                                simOptions = activeSims(context)
-                                showSimPicker = true
-                            } else simPermission.launch(Manifest.permission.READ_PHONE_STATE)
-                        }
-                        .padding(horizontal = 11.dp, vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Default.Call, contentDescription = "انتخاب سیم‌کارت", tint = TextSecondary, modifier = Modifier.size(18.dp))
-                    Text("سیم‌کارت", color = TextPrimary, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp))
-                }
-                Spacer(Modifier.weight(1f))
-                Text("پیامک", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
-            }
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Bottom,
@@ -217,7 +201,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     value = draft,
                     onValueChange = { draft = it },
                     modifier = Modifier.weight(1f).widthIn(min = 0.dp),
-                    placeholder = { Text("پیام خود را بنویسید…", color = TextSecondary) },
+                    placeholder = { Text(if (vm.settings.language == 1) "Type a message…" else "پیام خود را بنویسید…", color = TextSecondary) },
                     shape = RoundedCornerShape(21.dp),
                     minLines = 2,
                     maxLines = 5,
@@ -240,7 +224,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                             } else simPermission.launch(Manifest.permission.READ_PHONE_STATE)
                         },
                         modifier = Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface),
-                    ) { Icon(Icons.Default.Call, "انتخاب سیم‌کارت", tint = IOSBlue) }
+                    ) { Icon(Icons.Default.Smartphone, "انتخاب سیم‌کارت", tint = IOSBlue) }
                     Text("SIM", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                 }
                 Spacer(Modifier.width(4.dp))
@@ -264,7 +248,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                             ),
                         contentAlignment = Alignment.Center,
                     ) { Icon(Icons.Default.Send, "ارسال؛ برای زمان‌بندی چند لحظه نگه دارید", tint = if (draft.isNotBlank()) MaterialTheme.colorScheme.onPrimary else TextSecondary) }
-                    Text("ارسال", color = if (draft.isNotBlank()) IOSBlue else TextSecondary, style = MaterialTheme.typography.labelSmall)
+                    Text(if (vm.settings.language == 1) "Send" else "ارسال", color = if (draft.isNotBlank()) IOSBlue else TextSecondary, style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
