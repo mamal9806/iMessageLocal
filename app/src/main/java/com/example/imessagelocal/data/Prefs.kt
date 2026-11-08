@@ -11,6 +11,7 @@ data class Settings(
     val accentTheme: Int = 0,
     val language: Int = 0,
     val setupComplete: Boolean = false,
+    val autoMoveSpam: Boolean = false,
 )
 
 class Prefs(context: Context) {
@@ -25,6 +26,7 @@ class Prefs(context: Context) {
         accentTheme = prefs.getInt("accent_theme", 0),
         language = prefs.getInt("language", 0),
         setupComplete = prefs.getBoolean("setup_complete", false),
+        autoMoveSpam = prefs.getBoolean("auto_move_spam", false),
     )
 
     fun save(s: Settings) {
@@ -37,6 +39,7 @@ class Prefs(context: Context) {
             .putInt("accent_theme", s.accentTheme)
             .putInt("language", s.language)
             .putBoolean("setup_complete", s.setupComplete)
+            .putBoolean("auto_move_spam", s.autoMoveSpam)
             .apply()
     }
 }
