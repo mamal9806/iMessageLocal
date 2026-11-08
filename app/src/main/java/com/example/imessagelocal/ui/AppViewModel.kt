@@ -17,6 +17,8 @@ import com.example.imessagelocal.data.ConversationEntity
 import com.example.imessagelocal.data.MessageEntity
 import com.example.imessagelocal.data.Prefs
 import com.example.imessagelocal.data.Settings
+import com.example.imessagelocal.data.ScheduledSmsEntity
+import android.app.AlarmManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -51,6 +53,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     val messages: StateFlow<List<MessageEntity>> = openId
         .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else repo.messages(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val scheduledMessages: StateFlow<List<ScheduledSmsEntity>> = openId
+        .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else repo.scheduledMessages(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun updateSettings(s: Settings) {
@@ -135,6 +141,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun clearSmsStatus() { smsStatus = "" }
+
+    fun scheduleSms(conversationId: Long, text: String, scheduledAt: Long) {
+        val clean = text.trim()
+        if (clean.isEmpty() || scheduledAt <= System.currentTimeMillis()) return
+        viewModelScope.launch {
+            val conversation = repo.getConversation(conversationId) ?: return@launch
+            if (conversation.phoneNumber.isBlank()) { smsStatus = "برای این گفتگو شماره تلفن ثبت نشده است."; return@launch }
+            val subId = conversation.simSubscriptionId?.takeIf { it >= 0 } ?: settings.defaultSimSubscriptionId.takeIf { it >= 0 }
+            val id = repo.addScheduledSms(conversationId, conversation.phoneNumber, clean, scheduledAt, subId)
+            val alarmIntent = Intent(getApplication(), com.example.imessagelocal.ScheduledSmsReceiver::class.java).putExtra("schedule_id", id)
+            val pending = PendingIntent.getBroadcast(getApplication(), id.toInt(), alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            getApplication<Application>().getSystemService(AlarmManager::class.java).setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, scheduledAt, pending)
+            smsStatus = "پیام برای زمان انتخاب‌شده زمان‌بندی شد."
+        }
+    }
+
+    fun cancelScheduledSms(id: Long) { viewModelScope.launch { repo.cancelScheduledSms(id) } }
 
     fun logIncoming(conversationId: Long, text: String) {
         val clean = text.trim()
