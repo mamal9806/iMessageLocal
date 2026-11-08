@@ -206,6 +206,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MessageBubble(m: MessageEntity, onLongPress: () -> Unit) {
     val shape = RoundedCornerShape(22.dp)
