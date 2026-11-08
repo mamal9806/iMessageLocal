@@ -9,10 +9,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ChatDao {
-    @Query("SELECT * FROM conversations WHERE archived = 0 ORDER BY pinned DESC, updatedAt DESC")
+    @Query("SELECT * FROM conversations WHERE archived = 0 AND trashed = 0 AND spam = 0 AND blocked = 0 ORDER BY pinned DESC, updatedAt DESC")
     fun observeConversations(): Flow<List<ConversationEntity>>
 
-    @Query("SELECT * FROM conversations WHERE archived = 0 AND (name LIKE '%' || :query || '%' OR phoneNumber LIKE '%' || :query || '%' OR lastText LIKE '%' || :query || '%') ORDER BY pinned DESC, updatedAt DESC")
+    @Query("SELECT * FROM conversations WHERE archived = 0 AND trashed = 0 AND spam = 0 AND blocked = 0 AND (name LIKE '%' || :query || '%' OR phoneNumber LIKE '%' || :query || '%' OR lastText LIKE '%' || :query || '%') ORDER BY pinned DESC, updatedAt DESC")
     fun searchConversations(query: String): Flow<List<ConversationEntity>>
 
     @Query("SELECT * FROM conversations WHERE id = :id")
@@ -20,6 +20,21 @@ interface ChatDao {
 
     @Query("SELECT * FROM conversations")
     suspend fun getAllConversations(): List<ConversationEntity>
+
+    @Query("SELECT * FROM conversations ORDER BY pinned DESC, updatedAt DESC")
+    fun observeAllConversations(): Flow<List<ConversationEntity>>
+
+    @Query("UPDATE conversations SET archived=:archived, trashed=:trashed, spam=:spam, blocked=:blocked WHERE id=:id")
+    suspend fun setConversationFolder(id: Long, archived: Boolean, trashed: Boolean, spam: Boolean, blocked: Boolean)
+
+    @Query("UPDATE conversations SET unreadCount=0")
+    suspend fun markAllConversationsRead()
+
+    @Query("UPDATE conversations SET unreadCount=0 WHERE id=:id")
+    suspend fun markConversationRead(id: Long)
+
+    @Query("UPDATE conversations SET unreadCount=unreadCount + 1 WHERE id=:id")
+    suspend fun incrementUnread(id: Long)
 
     @Query("SELECT * FROM conversations WHERE phoneNumber = :number LIMIT 1")
     suspend fun findByPhone(number: String): ConversationEntity?
