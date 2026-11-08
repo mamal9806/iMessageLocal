@@ -26,6 +26,7 @@
             <intent-filter><action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" /><data android:mimeType="application/vnd.wap.mms-message" /></intent-filter>
         </receiver>
         <receiver android:name=".SmsStatusReceiver" android:exported="false" />
+        <receiver android:name=".ScheduledSmsReceiver" android:exported="false" />
         <receiver android:name=".QuickReplyReceiver" android:exported="false" />
         <service android:name=".SmsRespondService" android:exported="true" android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE">
             <intent-filter><action android:name="android.intent.action.RESPOND_VIA_MESSAGE" /><category android:name="android.intent.category.DEFAULT" />
