@@ -48,7 +48,7 @@ fun AppRoot(vm: AppViewModel) {
                     else -> SettingsScreen(vm, onBack = { tab = RootTab.Messages })
                 }
             }
-            if (openId == null) {
+            if (openId == null && vm.settings.setupComplete) {
                 Box(Modifier.align(androidx.compose.ui.Alignment.BottomCenter)) {
                     BottomNav(selected = tab, onSelect = { tab = it })
                 }
