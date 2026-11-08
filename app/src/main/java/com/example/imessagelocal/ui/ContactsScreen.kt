@@ -49,6 +49,7 @@ private data class PhoneContact(val id: Long, val name: String, val number: Stri
 @Composable
 fun ContactsScreen(vm: AppViewModel, onOpen: (Long) -> Unit) {
     val context = LocalContext.current
+    val english = vm.settings.language == 1
     var contacts by remember { mutableStateOf<List<PhoneContact>>(emptyList()) }
     var denied by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
@@ -61,13 +62,13 @@ fun ContactsScreen(vm: AppViewModel, onOpen: (Long) -> Unit) {
     }
 
     Column(Modifier.fillMaxSize().padding(bottom = 92.dp)) {
-        Text("مخاطبین", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
-        OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), singleLine = true, placeholder = { Text("جستجوی نام یا شماره") }, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface))
+        Text(if (english) "Contacts" else "مخاطبین", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
+        OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), singleLine = true, placeholder = { Text(if (english) "Search name or number" else "جستجوی نام یا شماره") }, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface))
         if (denied) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("برای نمایش مخاطبین، مجوز مخاطبین لازم است", color = TextSecondary)
-                    TextButton(onClick = { launcher.launch(Manifest.permission.READ_CONTACTS) }) { Text("اعطای مجوز", color = IOSBlue) }
+                    Text(if (english) "Contacts permission is required to display contacts" else "برای نمایش مخاطبین، مجوز مخاطبین لازم است", color = TextSecondary)
+                    TextButton(onClick = { launcher.launch(Manifest.permission.READ_CONTACTS) }) { Text(if (english) "Grant permission" else "اعطای مجوز", color = IOSBlue) }
                 }
             }
         } else {
@@ -84,7 +85,7 @@ fun ContactsScreen(vm: AppViewModel, onOpen: (Long) -> Unit) {
                         }
                         TextButton(onClick = {
                             vm.createConversation(c.name, c.number)
-                        }) { Text("پیام", color = IOSBlue) }
+                        }) { Text(if (english) "Message" else "پیام", color = IOSBlue) }
                     }
                 }
             }
