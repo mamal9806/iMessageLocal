@@ -51,8 +51,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         .flatMapLatest { repo.conversations(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private val everything: StateFlow<List<ConversationEntity>> = repo.conversations("")
+    private val everything: StateFlow<List<ConversationEntity>> = repo.allConversations()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val allConversations: StateFlow<List<ConversationEntity>> = everything
 
     val messages: StateFlow<List<MessageEntity>> = openId
         .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else repo.messages(id) }
@@ -73,6 +75,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun open(id: Long?) {
         openId.value = id
+        if (id != null) viewModelScope.launch { repo.markRead(id) }
+    }
+
+    fun moveConversationToFolder(id: Long, folder: String) {
+        viewModelScope.launch { repo.moveConversationToFolder(id, folder) }
+    }
+
+    fun markAllConversationsRead() {
+        viewModelScope.launch { repo.markAllRead() }
+    }
+
+    fun markConversationRead(id: Long) {
+        viewModelScope.launch { repo.markRead(id) }
+    }
+
+    fun permanentlyDeleteConversation(id: Long) {
+        viewModelScope.launch { repo.deleteConversation(id) }
     }
 
     fun conversationName(id: Long): String =
