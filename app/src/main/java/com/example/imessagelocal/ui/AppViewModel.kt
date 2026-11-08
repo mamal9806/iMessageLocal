@@ -3,6 +3,8 @@ package com.example.imessagelocal.ui
 import android.app.Application
 import android.telephony.SmsManager
 import android.provider.Telephony
+import android.provider.ContactsContract
+import android.net.Uri
 import android.os.Build
 import android.app.PendingIntent
 import android.content.Intent
@@ -141,6 +143,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun findSavedContactName(address: String): String? {
+        if (address.isBlank()) return null
+        return try {
+            val lookupUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(address))
+            getApplication<Application>().contentResolver.query(
+                lookupUri,
+                arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME),
+                null, null, null,
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0)?.takeIf { it.isNotBlank() } else null
+            }
+        } catch (_: Exception) { null }
+    }
+
     fun restorePreviousMessages() {
         val context = getApplication<Application>()
         if (Telephony.Sms.getDefaultSmsPackage(context) != context.packageName) {
@@ -161,8 +177,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         if (type == Telephony.Sms.MESSAGE_TYPE_INBOX || type == Telephony.Sms.MESSAGE_TYPE_SENT ||
                             type == Telephony.Sms.MESSAGE_TYPE_OUTBOX || type == Telephony.Sms.MESSAGE_TYPE_FAILED ||
                             type == Telephony.Sms.MESSAGE_TYPE_QUEUED) {
-                            repo.importSms(cursor.getString(addressCol).orEmpty(), cursor.getString(bodyCol).orEmpty(),
-                                cursor.getLong(dateCol), type != Telephony.Sms.MESSAGE_TYPE_INBOX)
+                            val address = cursor.getString(addressCol).orEmpty()
+                            val contactName = findSavedContactName(address)
+                            repo.importSms(address, cursor.getString(bodyCol).orEmpty(),
+                                cursor.getLong(dateCol), type != Telephony.Sms.MESSAGE_TYPE_INBOX, contactName)
                             imported++
                         }
                     }
