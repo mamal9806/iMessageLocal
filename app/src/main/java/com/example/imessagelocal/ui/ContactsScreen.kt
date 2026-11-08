@@ -74,7 +74,7 @@ fun ContactsScreen(vm: AppViewModel, onOpen: (Long) -> Unit) {
             LazyColumn(Modifier.fillMaxSize()) {
                 items(contacts.filter { it.name.contains(query, true) || it.number.contains(query, true) }, key = { "${it.id}:${it.number}" }) { c ->
                     Row(Modifier.fillMaxWidth().clickable { vm.createConversation(c.name, c.number) }.padding(horizontal = 18.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(50.dp).clip(CircleShape).background(Color(0xFF3D73B9)), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(50.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
                             Icon(Icons.Default.Person, null, tint = Color.White)
                         }
                         Spacer(Modifier.width(12.dp))
