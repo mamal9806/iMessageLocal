@@ -27,6 +27,9 @@ interface ChatDao {
     @Query("UPDATE conversations SET simSubscriptionId = :subId WHERE id = :id")
     suspend fun setConversationSim(id: Long, subId: Int?)
 
+    @Query("UPDATE conversations SET unreadCount = 0 WHERE id = :id")
+    suspend fun markConversationRead(id: Long)
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertConversation(conversation: ConversationEntity): Long
 
