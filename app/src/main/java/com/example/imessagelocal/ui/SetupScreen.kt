@@ -47,18 +47,19 @@ import com.example.imessagelocal.data.Settings
 @Composable
 fun SetupScreen(vm: AppViewModel, onComplete: () -> Unit) {
     val context = LocalContext.current
+    val english = vm.settings.language == 1
     var roleGranted by remember { mutableStateOf(Telephony.Sms.getDefaultSmsPackage(context) == context.packageName) }
-    var permissionSummary by remember { mutableStateOf("برای استفاده کامل، مجوزهای لازم را فعال کنید.") }
+    var permissionSummary by remember { mutableStateOf(if (english) "Enable the required permissions to use all features." else "برای استفاده کامل، مجوزهای لازم را فعال کنید.") }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         val granted = result.count { it.value }
-        permissionSummary = "$granted مجوز از ${result.size} مجوز درخواست‌شده فعال شد."
+        permissionSummary = if (english) "$granted of ${result.size} requested permissions granted." else "$granted مجوز از ${result.size} مجوز درخواست‌شده فعال شد."
     }
     val roleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         roleGranted = Telephony.Sms.getDefaultSmsPackage(context) == context.packageName
-        permissionSummary = if (roleGranted) "A SMS برنامه پیش‌فرض پیامک شد." else "انتخاب برنامه پیش‌فرض انجام نشد."
+        permissionSummary = if (english) { if (roleGranted) "A SMS is now the default SMS app." else "Default app selection was not completed." } else { if (roleGranted) "A SMS برنامه پیش‌فرض پیامک شد." else "انتخاب برنامه پیش‌فرض انجام نشد." }
     }
     val restorePermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) vm.restorePreviousMessages() else permissionSummary = "برای بازیابی، مجوز خواندن پیامک لازم است."
+        if (granted) vm.restorePreviousMessages() else permissionSummary = if (english) "SMS read permission is required to restore messages." else "برای بازیابی، مجوز خواندن پیامک لازم است."
     }
 
     Column(
@@ -68,16 +69,16 @@ fun SetupScreen(vm: AppViewModel, onComplete: () -> Unit) {
     ) {
         Icon(Icons.Default.Sms, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.height(64.dp))
         Spacer(Modifier.height(14.dp))
-        Text("به A SMS خوش آمدید", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("چند مرحله کوتاه تا آماده شدن برنامه", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(if (english) "Welcome to A SMS" else "به A SMS خوش آمدید", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(if (english) "Just a few steps to get the app ready" else "چند مرحله کوتاه تا آماده شدن برنامه", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(24.dp))
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = RoundedCornerShape(22.dp)) {
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.primary)
                     Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                        Text("دسترسی‌های موردنیاز", fontWeight = FontWeight.SemiBold)
-                        Text("ارسال و دریافت پیامک، مخاطبین، وضعیت سیم‌کارت و اعلان‌ها", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(if (english) "Required permissions" else "دسترسی‌های موردنیاز", fontWeight = FontWeight.SemiBold)
+                        Text(if (english) "SMS, contacts, SIM status and notifications" else "ارسال و دریافت پیامک، مخاطبین، وضعیت سیم‌کارت و اعلان‌ها", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Button(onClick = {
@@ -90,13 +91,13 @@ fun SetupScreen(vm: AppViewModel, onComplete: () -> Unit) {
                         if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
                     }.filter { ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED }
                     if (permissions.isNotEmpty()) permissionLauncher.launch(permissions.toTypedArray())
-                    else permissionSummary = "تمام مجوزهای درخواستی قبلاً فعال شده‌اند."
-                }, modifier = Modifier.fillMaxWidth()) { Text("فعال‌سازی دسترسی‌ها") }
+                    else permissionSummary = if (english) "All requested permissions are already granted." else "تمام مجوزهای درخواستی قبلاً فعال شده‌اند."
+                }, modifier = Modifier.fillMaxWidth()) { Text(if (english) "Grant permissions" else "فعال‌سازی دسترسی‌ها") }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(if (roleGranted) Icons.Default.CheckCircle else Icons.Default.Forum, null, tint = MaterialTheme.colorScheme.primary)
                     Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                        Text("برنامه پیش‌فرض پیامک", fontWeight = FontWeight.SemiBold)
-                        Text(if (roleGranted) "A SMS برنامه پیش‌فرض است" else "برای دریافت پیامک و بازیابی تاریخچه لازم است", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(if (english) "Default SMS app" else "برنامه پیش‌فرض پیامک", fontWeight = FontWeight.SemiBold)
+                        Text(if (roleGranted) if (english) "A SMS is the default app" else "A SMS برنامه پیش‌فرض است" else if (english) "Required to receive SMS and restore message history" else "برای دریافت پیامک و بازیابی تاریخچه لازم است", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 OutlinedButton(onClick = {
@@ -107,17 +108,17 @@ fun SetupScreen(vm: AppViewModel, onComplete: () -> Unit) {
                     } else {
                         roleLauncher.launch(Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT).putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, context.packageName))
                     }
-                }, modifier = Modifier.fillMaxWidth()) { Text(if (roleGranted) "برنامه پیش‌فرض تنظیم شده" else "انتخاب A SMS به‌عنوان برنامه پیامک") }
+                }, modifier = Modifier.fillMaxWidth()) { Text(if (roleGranted) if (english) "Default app selected" else "برنامه پیش‌فرض تنظیم شده" else if (english) "Set A SMS as default SMS app" else "انتخاب A SMS به‌عنوان برنامه پیامک") }
             }
         }
         Spacer(Modifier.height(16.dp))
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(22.dp)) {
             Column(Modifier.fillMaxWidth().padding(18.dp)) {
-                Text("بازیابی پیام‌های قبلی", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                Text("پیامک‌های دریافتی و ارسالی از برنامه قبلی، با تاریخ اصلی به گفتگوها منتقل می‌شوند. پیام‌های تکراری دوباره وارد نمی‌شوند.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                Text(if (english) "Restore previous messages" else "بازیابی پیام‌های قبلی", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text(if (english) "Import sent and received SMS from your previous app with their original timestamps. Duplicate messages are skipped." else "پیامک‌های دریافتی و ارسالی از برنامه قبلی، با تاریخ اصلی به گفتگوها منتقل می‌شوند. پیام‌های تکراری دوباره وارد نمی‌شوند.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(10.dp))
                 OutlinedButton(enabled = roleGranted, onClick = { restorePermissionLauncher.launch(Manifest.permission.READ_SMS) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("بازیابی پیامک‌های قبلی")
+                    Text(if (english) "Restore SMS history" else "بازیابی پیامک‌های قبلی")
                 }
             }
         }
@@ -126,8 +127,8 @@ fun SetupScreen(vm: AppViewModel, onComplete: () -> Unit) {
         vm.smsStatus.takeIf { it.isNotBlank() }?.let { Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall) }
         Spacer(Modifier.height(18.dp))
         Button(onClick = onComplete, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
-            Text("پایان راه‌اندازی و ورود به برنامه")
+            Text(if (english) "Finish setup and open app" else "پایان راه‌اندازی و ورود به برنامه")
         }
-        Text("هر زمان لازم باشد می‌توانید مجوزها را از تنظیمات اندروید مدیریت کنید.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp))
+        Text(if (english) "You can manage permissions anytime in Android settings." else "هر زمان لازم باشد می‌توانید مجوزها را از تنظیمات اندروید مدیریت کنید.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp))
     }
 }
