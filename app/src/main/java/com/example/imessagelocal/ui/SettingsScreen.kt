@@ -94,7 +94,7 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
             SettingsHero(english)
             SectionTitle(if (english) "Appearance" else "ظاهر برنامه")
             SettingsCard {
-                if (english) listOf(0 to "System default", 1 to "Light", 2 to "Dark") else listOf(0 to "پیروی از سیستم", 1 to "روشن", 2 to "تاریک").forEach { (mode, label) ->
+                (if (english) listOf(0 to "System default", 1 to "Light", 2 to "Dark") else listOf(0 to "پیروی از سیستم", 1 to "روشن", 2 to "تاریک")).forEach { (mode, label) ->
                     Row(Modifier.fillMaxWidth().clickable { vm.updateSettings(s.copy(darkMode = mode)) }.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
                         RadioButton(selected = s.darkMode == mode, onClick = { vm.updateSettings(s.copy(darkMode = mode)) })
