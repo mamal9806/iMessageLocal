@@ -46,6 +46,7 @@ fun IMessageTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     fontScale: Float = 1f,
     accentTheme: Int = 0,
+    language: Int = 0,
     content: @Composable () -> Unit,
 ) {
     val accent = palette(accentTheme)
@@ -94,7 +95,7 @@ fun IMessageTheme(
         titleLarge = baseTypography.titleLarge.copy(fontFamily = FontFamily.Default),
     )
     CompositionLocalProvider(
-        LocalLayoutDirection provides LayoutDirection.Rtl,
+        LocalLayoutDirection provides if (language == 1) LayoutDirection.Ltr else LayoutDirection.Rtl,
         LocalDensity provides Density(density.density, density.fontScale * fontScale),
     ) {
         MaterialTheme(colorScheme = colors, typography = typography) {
