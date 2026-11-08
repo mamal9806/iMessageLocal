@@ -129,13 +129,13 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
             Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, (english ? "Back" : "بازگشت"), tint = TextPrimary) }
+            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, if (english) "Back" else "بازگشت", tint = TextPrimary) }
             Box(Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
                 Text(title.take(1).uppercase(), color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
             }
             Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
                 Text(title, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text((english ? "SMS" : "پیامک"), color = TextSecondary, style = MaterialTheme.typography.labelSmall)
+                Text(if (english) "SMS" else "پیامک", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
             }
             IconButton(onClick = { showStickerPicker = true }) {
                 Icon(Icons.Default.EmojiEmotions, if (english) "Stickers" else "استیکرها", tint = IOSBlue)
@@ -159,7 +159,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
             }
             IconButton(onClick = {
                 if (number.isNotBlank()) context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${Uri.encode(number)}")))
-            }) { Icon(Icons.Default.Call, (english ? "Call" : "تماس"), tint = TextSecondary) }
+            }) { Icon(Icons.Default.Call, if (english) "Call" else "تماس", tint = TextSecondary) }
         }
 
         Box(Modifier.fillMaxSize().weight(1f)) {
@@ -198,7 +198,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     Text(if (vm.settings.language == 1) "Replying to" else "پاسخ به", color = IOSBlue, style = MaterialTheme.typography.labelMedium)
                     Text(r.text, color = TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
                 }
-                TextButton(onClick = { replyTo = null }) { Text(if (vm.settings.language == 1) "Cancel" else (english ? "Cancel" : "لغو")) }
+                TextButton(onClick = { replyTo = null }) { Text(if (vm.settings.language == 1) "Cancel" else if (english) "Cancel" else "لغو") }
             }
         }
         if (scheduledMessages.isNotEmpty()) {
@@ -207,7 +207,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Schedule, null, tint = IOSBlue, modifier = Modifier.size(16.dp))
                         Text("  ${java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(java.util.Date(item.scheduledAt))} · ${item.text.take(28)}", color = TextSecondary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f), maxLines = 1)
-                        TextButton(onClick = { vm.cancelScheduledSms(item.id) }) { Text((english ? "Cancel" : "لغو"), color = MaterialTheme.colorScheme.error) }
+                        TextButton(onClick = { vm.cancelScheduledSms(item.id) }) { Text(if (english) "Cancel" else "لغو", color = MaterialTheme.colorScheme.error) }
                     }
                 }
             }
@@ -253,7 +253,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                             } else simPermission.launch(Manifest.permission.READ_PHONE_STATE)
                         },
                         modifier = Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface),
-                    ) { Icon(Icons.Default.Smartphone, (english ? "Choose SIM" : "انتخاب سیم‌کارت"), tint = IOSBlue) }
+                    ) { Icon(Icons.Default.Smartphone, if (english) "Choose SIM" else "انتخاب سیم‌کارت", tint = IOSBlue) }
                     Text("SIM", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                 }
                 Spacer(Modifier.width(4.dp))
@@ -307,21 +307,21 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     menuFor?.let { m ->
         AlertDialog(
             onDismissRequest = { menuFor = null },
-            title = { Text((english ? "Message actions" : "عملیات پیام")) },
+            title = { Text(if (english) "Message actions" else "عملیات پیام") },
             text = { Text(m.text, maxLines = 5, overflow = TextOverflow.Ellipsis) },
             confirmButton = {
-                TextButton(onClick = { replyTo = m; menuFor = null }) { Text((english ? "Reply" : "پاسخ")) }
+                TextButton(onClick = { replyTo = m; menuFor = null }) { Text(if (english) "Reply" else "پاسخ") }
             },
             dismissButton = {
                 Column(horizontalAlignment = Alignment.End) {
                     TextButton(onClick = { vm.toggleMessagePin(m); menuFor = null }) {
-                        Text(if (m.pinned) (english ? "Unpin message" : "برداشتن سنجاق") else (english ? "Pin message" : "سنجاق کردن پیام"))
+                        Text(if (m.pinned) if (english) "Unpin message" else "برداشتن سنجاق" else if (english) "Pin message" else "سنجاق کردن پیام")
                     }
                     if (m.isOutgoing) {
                         TextButton(onClick = { editText = m.text; editing = m; menuFor = null }) { Text("ویرایش") }
                     }
                     TextButton(onClick = { confirmDeleteMessage = m; menuFor = null }) {
-                        Text((english ? "Delete message" : "حذف پیام"), color = MaterialTheme.colorScheme.error)
+                        Text(if (english) "Delete message" else "حذف پیام", color = MaterialTheme.colorScheme.error)
                     }
                 }
             },
@@ -331,42 +331,42 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     confirmDeleteMessage?.let { m ->
         AlertDialog(
             onDismissRequest = { confirmDeleteMessage = null },
-            title = { Text((english ? "Delete message?" : "حذف پیام؟")) },
-            text = { Text((english ? "This message will be removed from A SMS only. It cannot be deleted from the recipient’s phone." : "این پیام از گفتگوی داخل A SMS حذف می‌شود. پیامک ارسال‌شده از گوشی گیرنده حذف نخواهد شد.")) },
+            title = { Text(if (english) "Delete message?" else "حذف پیام؟") },
+            text = { Text(if (english) "This message will be removed from A SMS only. It cannot be deleted from the recipient’s phone." else "این پیام از گفتگوی داخل A SMS حذف می‌شود. پیامک ارسال‌شده از گوشی گیرنده حذف نخواهد شد.") },
             confirmButton = {
                 TextButton(onClick = { vm.deleteMessage(m); confirmDeleteMessage = null }) {
-                    Text((english ? "Delete" : "حذف"), color = MaterialTheme.colorScheme.error)
+                    Text(if (english) "Delete" else "حذف", color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmDeleteMessage = null }) { Text((english ? "Cancel" : "انصراف")) } },
+            dismissButton = { TextButton(onClick = { confirmDeleteMessage = null }) { Text(if (english) "Cancel" else "انصراف") } },
         )
     }
 
     editing?.let { m ->
         AlertDialog(
             onDismissRequest = { editing = null },
-            title = { Text((english ? "Edit message" : "ویرایش پیام")) },
+            title = { Text(if (english) "Edit message" else "ویرایش پیام") },
             text = { OutlinedTextField(editText, { editText = it }, singleLine = false) },
-            confirmButton = { TextButton(onClick = { vm.editMessage(m, editText); editing = null }) { Text((english ? "Save" : "ذخیره")) } },
-            dismissButton = { TextButton(onClick = { editing = null }) { Text((english ? "Cancel" : "لغو")) } },
+            confirmButton = { TextButton(onClick = { vm.editMessage(m, editText); editing = null }) { Text(if (english) "Save" else "ذخیره") } },
+            dismissButton = { TextButton(onClick = { editing = null }) { Text(if (english) "Cancel" else "لغو") } },
         )
     }
 
     if (showSimPicker) {
         AlertDialog(
             onDismissRequest = { showSimPicker = false },
-            title = { Text((english ? "Choose SIM" : "انتخاب سیم‌کارت")) },
+            title = { Text(if (english) "Choose SIM" else "انتخاب سیم‌کارت") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     TextButton(onClick = { vm.setConversationSim(conversationId, null); showSimPicker = false }) { Text("سیم‌کارت پیش‌فرض سیستم") }
                     simOptions.forEachIndexed { index, info ->
                         TextButton(onClick = { vm.setConversationSim(conversationId, info.subscriptionId); showSimPicker = false }) {
-                            Text("SIM ${index + 1} · ${info.carrierName ?: (english ? "Carrier" : "اپراتور")}")
+                            Text("SIM ${index + 1} · ${info.carrierName ?: if (english) "Carrier" else "اپراتور"}")
                         }
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showSimPicker = false }) { Text((english ? "Cancel" : "لغو")) } },
+            confirmButton = { TextButton(onClick = { showSimPicker = false }) { Text(if (english) "Cancel" else "لغو") } },
         )
     }
 }
