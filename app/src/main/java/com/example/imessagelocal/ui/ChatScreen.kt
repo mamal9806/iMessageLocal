@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Message
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -128,6 +129,16 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 Text(title, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text("پیامک", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
             }
+            Box {
+                IconButton(onClick = { showTemplates = true }) {
+                    Icon(Icons.Default.Message, "قالب‌های آماده", tint = IOSBlue)
+                }
+                androidx.compose.material3.DropdownMenu(expanded = showTemplates, onDismissRequest = { showTemplates = false }) {
+                    listOf("سلام، حالت چطوره؟", "لطفاً با من تماس بگیر.", "الان فرصت صحبت ندارم؛ بعداً تماس می‌گیرم.", "ممنون از لطفت.", "در راه هستم و به‌زودی می‌رسم.").forEach { template ->
+                        androidx.compose.material3.DropdownMenuItem(text = { Text(template) }, onClick = { draft = template; showTemplates = false })
+                    }
+                }
+            }
             IconButton(onClick = {
                 if (number.isNotBlank()) context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${Uri.encode(number)}")))
             }) { Icon(Icons.Default.Call, "تماس", tint = TextSecondary) }
@@ -182,21 +193,6 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
             ) {
                 Row(
                     Modifier.clip(RoundedCornerShape(18.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
-                        .clickable { showTemplates = true }
-                        .padding(horizontal = 11.dp, vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Default.Message, contentDescription = "قالب پیام", tint = IOSBlue, modifier = Modifier.size(18.dp))
-                    Text("قالب آماده", color = IOSBlue, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp))
-                }
-                androidx.compose.material3.DropdownMenu(expanded = showTemplates, onDismissRequest = { showTemplates = false }) {
-                    listOf("سلام، حالت چطوره؟", "لطفاً با من تماس بگیر.", "الان فرصت صحبت ندارم؛ بعداً تماس می‌گیرم.", "ممنون از لطفت.", "در راه هستم و به‌زودی می‌رسم.").forEach { template ->
-                        androidx.compose.material3.DropdownMenuItem(text = { Text(template) }, onClick = { draft = template; showTemplates = false })
-                    }
-                }
-                Row(
-                    Modifier.clip(RoundedCornerShape(18.dp))
                         .background(MaterialTheme.colorScheme.surface)
                         .clickable {
                             if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
@@ -238,26 +234,36 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     IconButton(
                         onClick = {
-                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
-                                schedulePermission.launch(Manifest.permission.SEND_SMS)
-                            } else openSchedulePicker()
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                                simOptions = activeSims(context)
+                                showSimPicker = true
+                            } else simPermission.launch(Manifest.permission.READ_PHONE_STATE)
                         },
-                        enabled = draft.isNotBlank(),
                         modifier = Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface),
-                    ) { Icon(Icons.Default.Schedule, "زمان‌بندی پیامک", tint = if (draft.isNotBlank()) IOSBlue else TextSecondary) }
-                    Text("زمان", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
+                    ) { Icon(Icons.Default.Call, "انتخاب سیم‌کارت", tint = IOSBlue) }
+                    Text("SIM", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                 }
                 Spacer(Modifier.width(4.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(
-                        onClick = {
-                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
-                                vm.sendSms(conversationId, draft.trim(), replyTo); draft = ""; replyTo = null
-                            } else smsPermission.launch(Manifest.permission.SEND_SMS)
-                        },
-                        enabled = draft.isNotBlank(),
-                        modifier = Modifier.size(48.dp).clip(CircleShape).background(if (draft.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
-                    ) { Icon(Icons.Default.Send, "ارسال پیامک", tint = if (draft.isNotBlank()) MaterialTheme.colorScheme.onPrimary else TextSecondary) }
+                    Box(
+                        Modifier.size(48.dp)
+                            .clip(CircleShape)
+                            .background(if (draft.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                            .combinedClickable(
+                                enabled = draft.isNotBlank(),
+                                onClick = {
+                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
+                                        vm.sendSms(conversationId, draft.trim(), replyTo); draft = ""; replyTo = null
+                                    } else smsPermission.launch(Manifest.permission.SEND_SMS)
+                                },
+                                onLongClick = {
+                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+                                        schedulePermission.launch(Manifest.permission.SEND_SMS)
+                                    } else openSchedulePicker()
+                                },
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Default.Send, "ارسال؛ برای زمان‌بندی چند لحظه نگه دارید", tint = if (draft.isNotBlank()) MaterialTheme.colorScheme.onPrimary else TextSecondary) }
                     Text("ارسال", color = if (draft.isNotBlank()) IOSBlue else TextSecondary, style = MaterialTheme.typography.labelSmall)
                 }
             }
