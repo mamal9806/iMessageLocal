@@ -11,9 +11,9 @@ class ChatRepository(private val dao: ChatDao) {
 
     suspend fun createConversation(name: String, phoneNumber: String): Long {
         val cleanNumber = phoneNumber.trim()
+        val normalized = normalizeAddress(cleanNumber)
         val existing = dao.getAllConversations().firstOrNull {
-            cleanNumber.isNotBlank() && it.phoneNumber.isNotBlank() &&
-                PhoneNumberUtils.compare(it.phoneNumber, cleanNumber)
+            normalized.isNotBlank() && normalizeAddress(it.phoneNumber) == normalized
         }
         if (existing != null) {
             if (name.isNotBlank() && existing.name != name) dao.updateConversation(existing.copy(name = name))
@@ -33,8 +33,9 @@ class ChatRepository(private val dao: ChatDao) {
 
     suspend fun receiveSms(address: String, body: String, timestamp: Long, contactName: String? = null): Long {
         val number = address.trim()
+        val normalized = normalizeAddress(number)
         var conversation = dao.getAllConversations().firstOrNull {
-            it.phoneNumber.isNotBlank() && PhoneNumberUtils.compare(it.phoneNumber, number)
+            it.phoneNumber.isNotBlank() && normalizeAddress(it.phoneNumber) == normalized
         }
         if (conversation == null) {
             val id = dao.insertConversation(ConversationEntity(name = number, phoneNumber = number, avatarColor = AVATAR_COLORS.random()))
@@ -51,13 +52,17 @@ class ChatRepository(private val dao: ChatDao) {
         return conversation.id
     }
 
-    suspend fun importSms(address: String, body: String, timestamp: Long, outgoing: Boolean) {
+    suspend fun importSms(address: String, body: String, timestamp: Long, outgoing: Boolean, contactName: String? = null) {
         val number = address.trim()
         if (number.isBlank() || body.isBlank()) return
+        val normalized = normalizeAddress(number)
         val existing = dao.getAllConversations().firstOrNull {
-            it.phoneNumber.isNotBlank() && PhoneNumberUtils.compare(it.phoneNumber, number)
+            it.phoneNumber.isNotBlank() && normalizeAddress(it.phoneNumber) == normalized
         }
-        val conversationId = existing?.id ?: createConversation(number, number)
+        val conversationId = existing?.id ?: createConversation(contactName?.takeIf { it.isNotBlank() } ?: number, number)
+        if (existing != null && !contactName.isNullOrBlank() && existing.name != contactName) {
+            dao.updateConversation(existing.copy(name = contactName))
+        }
         if (dao.hasImportedDuplicate(conversationId, body, outgoing, timestamp)) return
         dao.insertMessage(MessageEntity(conversationId = conversationId, text = body, isOutgoing = outgoing, createdAt = timestamp, deliveryState = if (outgoing) "SENT" else "RECEIVED"))
         val conversation = dao.getConversation(conversationId) ?: return
@@ -102,6 +107,13 @@ class ChatRepository(private val dao: ChatDao) {
         dao.updateConversation(conversation.copy(pinned = !conversation.pinned))
 
     suspend fun deleteConversation(id: Long) = dao.deleteConversation(id)
+
+    private fun normalizeAddress(value: String): String {
+        val trimmed = value.trim()
+        val normalized = PhoneNumberUtils.normalizeNumber(trimmed)
+        if (normalized.isNotBlank()) return if (normalized.startsWith("00")) "+${normalized.drop(2)}" else normalized
+        return trimmed.lowercase()
+    }
 
     companion object {
         val AVATAR_COLORS = listOf(
