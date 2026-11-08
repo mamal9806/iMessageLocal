@@ -53,4 +53,16 @@ interface ChatDao {
 
     @Query("DELETE FROM messages WHERE id = :id")
     suspend fun deleteMessage(id: Long)
+
+    @Insert
+    suspend fun insertScheduled(item: ScheduledSmsEntity): Long
+
+    @Query("SELECT * FROM scheduled_sms WHERE conversationId = :conversationId AND status = 'PENDING' ORDER BY scheduledAt ASC")
+    fun observeScheduled(conversationId: Long): Flow<List<ScheduledSmsEntity>>
+
+    @Query("SELECT * FROM scheduled_sms WHERE id = :id")
+    suspend fun getScheduled(id: Long): ScheduledSmsEntity?
+
+    @Query("UPDATE scheduled_sms SET status = :status WHERE id = :id")
+    suspend fun updateScheduledStatus(id: Long, status: String)
 }
