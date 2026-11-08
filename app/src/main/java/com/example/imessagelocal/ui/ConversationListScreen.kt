@@ -57,6 +57,7 @@ import com.example.imessagelocal.data.ConversationEntity
 @Composable
 fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings: () -> Unit) {
     val conversations by vm.conversations.collectAsStateWithLifecycle()
+    val english = vm.settings.language == 1
     var query by rememberSaveable { mutableStateOf("") }
     var showNew by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
@@ -84,14 +85,14 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
             Modifier.fillMaxWidth().padding(start = 20.dp, end = 14.dp, top = 18.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("پیام‌ها", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "تنظیمات", tint = TextSecondary) }
+            Text(if (english) "Messages" else "پیام‌ها", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, if (english) "Settings" else "تنظیمات", tint = TextSecondary) }
             IconButton(onClick = { contactPicker.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)) }) {
-                Icon(Icons.Default.Edit, "مخاطب جدید", tint = IOSBlue)
+                Icon(Icons.Default.Edit, if (english) "New contact" else "مخاطب جدید", tint = IOSBlue)
             }
         }
 
-        SearchField(query) {
+        SearchField(query, english) {
             query = it
             vm.setQuery(it)
         }
@@ -99,17 +100,17 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
         if (conversations.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (query.isBlank()) "هنوز گفتگویی وجود ندارد" else "نتیجه‌ای پیدا نشد", color = TextSecondary)
+                    Text(if (query.isBlank()) (if (english) "No conversations yet" else "هنوز گفتگویی وجود ندارد") else (if (english) "No results found" else "نتیجه‌ای پیدا نشد"), color = TextSecondary)
                     Spacer(Modifier.height(12.dp))
                     if (query.isBlank()) {
-                        TextButton(onClick = { showNew = true }) { Text("شروع گفتگوی جدید", color = IOSBlue) }
+                        TextButton(onClick = { showNew = true }) { Text(if (english) "Start a new conversation" else "شروع گفتگوی جدید", color = IOSBlue) }
                     }
                 }
             }
         } else {
             LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
                 items(conversations, key = { it.id }) { c ->
-                    ConversationRow(c, onClick = { onOpen(c.id) }, onLongClick = { menuFor = c })
+                    ConversationRow(c, english, onClick = { onOpen(c.id) }, onLongClick = { menuFor = c })
                 }
             }
         }
@@ -119,12 +120,12 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
         AlertDialog(
             onDismissRequest = { menuFor = null },
             title = { Text(c.name) },
-            text = { Text("عملیات گفتگو را انتخاب کنید") },
+            text = { Text(if (english) "Choose a chat action" else "عملیات گفتگو را انتخاب کنید") },
             confirmButton = {
-                TextButton(onClick = { vm.togglePin(c); menuFor = null }) { Text(if (c.pinned) "برداشتن سنجاق" else "سنجاق کردن") }
+                TextButton(onClick = { vm.togglePin(c); menuFor = null }) { Text(if (c.pinned) (if (english) "Unpin chat" else "برداشتن سنجاق") else (if (english) "Pin chat" else "سنجاق کردن")) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDeleteFor = c; menuFor = null }) { Text("حذف گفتگو", color = MaterialTheme.colorScheme.error) }
+                TextButton(onClick = { confirmDeleteFor = c; menuFor = null }) { Text(if (english) "Delete chat" else "حذف گفتگو", color = MaterialTheme.colorScheme.error) }
             },
         )
     }
@@ -132,45 +133,45 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
     confirmDeleteFor?.let { c ->
         AlertDialog(
             onDismissRequest = { confirmDeleteFor = null },
-            title = { Text("حذف گفتگو؟") },
-            text = { Text("تمام پیام‌های این گفتگو از A SMS حذف می‌شوند. این کار قابل بازگشت نیست.") },
+            title = { Text(if (english) "Delete chat?" else "حذف گفتگو؟") },
+            text = { Text(if (english) "All messages in this chat will be deleted from A SMS. This cannot be undone." else "تمام پیام‌های این گفتگو از A SMS حذف می‌شوند. این کار قابل بازگشت نیست.") },
             confirmButton = {
                 TextButton(onClick = { vm.deleteConversation(c.id); confirmDeleteFor = null }) {
-                    Text("حذف کامل", color = MaterialTheme.colorScheme.error)
+                    Text(if (english) "Delete" else "حذف کامل", color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmDeleteFor = null }) { Text("انصراف") } },
+            dismissButton = { TextButton(onClick = { confirmDeleteFor = null }) { Text(if (english) "Cancel" else "انصراف") } },
         )
     }
 
     if (showNew) {
         AlertDialog(
             onDismissRequest = { showNew = false },
-            title = { Text("گفتگوی جدید") },
+            title = { Text(if (english) "New chat" else "گفتگوی جدید") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(newName, { newName = it }, label = { Text("نام") }, singleLine = true)
-                    OutlinedTextField(newPhone, { newPhone = it }, label = { Text("شماره تلفن") }, singleLine = true)
+                    OutlinedTextField(newName, { newName = it }, label = { Text(if (english) "Name" else "نام") }, singleLine = true)
+                    OutlinedTextField(newPhone, { newPhone = it }, label = { Text(if (english) "Phone number" else "شماره تلفن") }, singleLine = true)
                 }
             },
             confirmButton = {
                 TextButton(enabled = newName.isNotBlank() && newPhone.isNotBlank(), onClick = {
                     vm.createConversation(newName, newPhone); newName = ""; newPhone = ""; showNew = false
-                }) { Text("ایجاد") }
+                }) { Text(if (english) "Create" else "ایجاد") }
             },
-            dismissButton = { TextButton(onClick = { showNew = false }) { Text("لغو") } },
+            dismissButton = { TextButton(onClick = { showNew = false }) { Text(if (english) "Cancel" else "لغو") } },
         )
     }
 }
 
 @Composable
-private fun SearchField(value: String, onValueChange: (String) -> Unit) {
+private fun SearchField(value: String, english: Boolean, onValueChange: (String) -> Unit) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
         leadingIcon = { Icon(Icons.Default.Search, null, tint = TextSecondary) },
-        placeholder = { Text("جستجو", color = TextSecondary) },
+        placeholder = { Text(if (english) "Search" else "جستجو", color = TextSecondary) },
         singleLine = true,
         shape = RoundedCornerShape(18.dp),
         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
@@ -184,7 +185,7 @@ private fun SearchField(value: String, onValueChange: (String) -> Unit) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ConversationRow(c: ConversationEntity, onClick: () -> Unit, onLongClick: () -> Unit) {
+private fun ConversationRow(c: ConversationEntity, english: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(horizontal = 18.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -205,16 +206,16 @@ private fun ConversationRow(c: ConversationEntity, onClick: () -> Unit, onLongCl
 }
 
 @Composable
-fun BottomNav(selected: RootTab, onSelect: (RootTab) -> Unit) {
+fun BottomNav(selected: RootTab, english: Boolean, onSelect: (RootTab) -> Unit) {
     // Kept separate so the visual shell can be shared by the three real destinations.
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp).clip(RoundedCornerShape(26.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = .96f)).border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = .35f)).padding(6.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
         val items = listOf(
-            Triple("پیام‌ها", RootTab.Messages, Icons.Default.Message),
-            Triple("مخاطبین", RootTab.Contacts, Icons.Default.Contacts),
-            Triple("تنظیمات", RootTab.Settings, Icons.Default.Settings),
+            Triple(if (english) "Messages" else "پیام‌ها", RootTab.Messages, Icons.Default.Message),
+            Triple(if (english) "Contacts" else "مخاطبین", RootTab.Contacts, Icons.Default.Contacts),
+            Triple(if (english) "Settings" else "تنظیمات", RootTab.Settings, Icons.Default.Settings),
         )
         items.forEach { (label, value, icon) ->
             val active = selected == value
