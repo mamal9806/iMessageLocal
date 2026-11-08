@@ -57,6 +57,9 @@ interface ChatDao {
     @Query("DELETE FROM messages WHERE id = :id")
     suspend fun deleteMessage(id: Long)
 
+    @Query("UPDATE messages SET pinned = :pinned WHERE id = :id")
+    suspend fun setMessagePinned(id: Long, pinned: Boolean)
+
     @Insert
     suspend fun insertScheduled(item: ScheduledSmsEntity): Long
 
