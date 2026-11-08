@@ -58,12 +58,12 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
     }
     val simPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
-            simOptions = try { context.getSystemService(SubscriptionManager::class.java).activeSubscriptionInfoList.orEmpty() }
-            catch (_: SecurityException) { emptyList() }
+            simOptions = try {
+                context.getSystemService(SubscriptionManager::class.java).activeSubscriptionInfoList.orEmpty()
+            } catch (_: SecurityException) { emptyList() }
             simMessage = if (simOptions.isEmpty()) "سیم‌کارت فعالی پیدا نشد." else ""
         } else simMessage = "برای نمایش سیم‌کارت‌ها مجوز تلفن لازم است."
     }
-    // Android's ringtone picker returns the selected notification URI.
     val soundPicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             val picked = if (Build.VERSION.SDK_INT >= 33) {
@@ -78,8 +78,12 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
-                navigationIcon = { TextButton(modifier = Modifier.liquidGlass(), onClick = onBack) { Text("‹  Back") } },
+                title = { Text("تنظیمات") },
+                navigationIcon = {
+                    TextButton(modifier = Modifier.liquidGlass(), onClick = onBack) {
+                        Text("‹  بازگشت")
+                    }
+                },
             )
         },
     ) { padding ->
@@ -87,19 +91,28 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
             Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Messaging", style = MaterialTheme.typography.titleMedium)
-            Button(onClick = {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val roleManager = context.getSystemService(RoleManager::class.java)
-                    if (roleManager.isRoleAvailable(RoleManager.ROLE_SMS) && !roleManager.isRoleHeld(RoleManager.ROLE_SMS)) {
-                        roleLauncher.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS))
+            Text("✉  پیام‌رسانی", style = MaterialTheme.typography.titleMedium)
+            Button(
+                onClick = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val roleManager = context.getSystemService(RoleManager::class.java)
+                        if (roleManager.isRoleAvailable(RoleManager.ROLE_SMS) && !roleManager.isRoleHeld(RoleManager.ROLE_SMS)) {
+                            roleLauncher.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS))
+                        }
+                    } else {
+                        roleLauncher.launch(
+                            Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT)
+                                .putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, context.packageName)
+                        )
                     }
-                } else {
-                    roleLauncher.launch(android.content.Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT)
-                        .putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, context.packageName))
-                }
-            }, modifier = Modifier.fillMaxWidth().liquidGlass()) { Text("Set as default SMS app") }
-            Text("Incoming SMS reception and SMS-provider integration require this app to hold the system SMS role.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                },
+                modifier = Modifier.fillMaxWidth().liquidGlass(),
+            ) { Text("✓  انتخاب به‌عنوان برنامه پیامک پیش‌فرض") }
+            Text(
+                "برای دریافت پیامک و مدیریت صندوق پیامک گوشی، باید A SMS برنامه پیش‌فرض پیامک باشد.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Button(
                 onClick = {
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED) {
@@ -107,34 +120,59 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                     } else historyLauncher.launch(Manifest.permission.READ_SMS)
                 },
                 modifier = Modifier.fillMaxWidth().liquidGlass(),
-            ) { Text("Import SMS history from this phone") }
-            Text("پیام‌های دریافتی و ارسالی از صندوق پیامک گوشی خوانده می‌شوند؛ موارد تکراری دوباره ثبت نمی‌شوند.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (vm.smsStatus.isNotBlank()) Text(vm.smsStatus, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-            Button(onClick = {
-                if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) contactsLauncher.launch(Manifest.permission.READ_CONTACTS)
-            }, modifier = Modifier.fillMaxWidth().liquidGlass()) { Text("Allow contact names") }
+            ) { Text("↻  انتقال تاریخچه پیامک‌های گوشی") }
+            Text(
+                "پیام‌های دریافتی و ارسالی از صندوق پیامک گوشی بررسی می‌شوند؛ موارد تکراری دوباره ثبت نمی‌شوند.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (vm.smsStatus.isNotBlank()) {
+                Text(vm.smsStatus, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            }
+            Button(
+                onClick = {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+                        contactsLauncher.launch(Manifest.permission.READ_CONTACTS)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().liquidGlass(),
+            ) { Text("♙  اجازه نمایش نام مخاطبان") }
 
             if (Build.VERSION.SDK_INT >= 33) {
-                Button(onClick = {
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }, modifier = Modifier.fillMaxWidth().liquidGlass()) { Text("Allow notifications") }
+                Button(
+                    onClick = {
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().liquidGlass(),
+                ) { Text("♢  فعال‌سازی اعلان‌ها") }
             }
 
             HorizontalDivider()
-            Text("Default SIM for new messages", style = MaterialTheme.typography.titleMedium)
-            Text("برای گفتگوهایی که سیم‌کارت جداگانه ندارند استفاده می‌شود.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("▣  سیم‌کارت پیش‌فرض", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "برای گفتگوهایی استفاده می‌شود که سیم‌کارت اختصاصی ندارند.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = s.defaultSimSubscriptionId == -1,
                     onClick = { vm.updateSettings(s.copy(defaultSimSubscriptionId = -1)) },
-                    label = { Text("System default") },
+                    label = { Text("پیش‌فرض سیستم") },
                 )
-                Button(onClick = {
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
-                        simOptions = try { context.getSystemService(SubscriptionManager::class.java).activeSubscriptionInfoList.orEmpty() } catch (_: SecurityException) { emptyList() }
-                        simMessage = if (simOptions.isEmpty()) "سیم‌کارت فعالی پیدا نشد." else ""
-                    } else simPermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
-                }) { Text("Choose SIM") }
+                Button(
+                    onClick = {
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                            simOptions = try {
+                                context.getSystemService(SubscriptionManager::class.java).activeSubscriptionInfoList.orEmpty()
+                            } catch (_: SecurityException) { emptyList() }
+                            simMessage = if (simOptions.isEmpty()) "سیم‌کارت فعالی پیدا نشد." else ""
+                        } else simPermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+                    },
+                    modifier = Modifier.liquidGlass(),
+                ) { Text("انتخاب سیم‌کارت") }
             }
             simOptions.forEachIndexed { index, info ->
                 FilterChip(
@@ -146,19 +184,27 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
             if (simMessage.isNotBlank()) Text(simMessage, color = MaterialTheme.colorScheme.error)
 
             HorizontalDivider()
-            Text("Appearance", style = MaterialTheme.typography.titleMedium)
+            Text("◐  ظاهر برنامه", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("System" to 0, "Light" to 1, "Dark" to 2).forEach { (label, value) ->
-                    FilterChip(selected = s.darkMode == value, onClick = { vm.updateSettings(s.copy(darkMode = value)) }, label = { Text(label) })
+                listOf("سیستم" to 0, "روشن" to 1, "تاریک" to 2).forEach { (label, value) ->
+                    FilterChip(
+                        selected = s.darkMode == value,
+                        onClick = { vm.updateSettings(s.copy(darkMode = value)) },
+                        label = { Text(label) },
+                    )
                 }
             }
-            Text("Text size: ${"%.2f".format(s.fontScale)}x")
-            Slider(value = s.fontScale, onValueChange = { vm.updateSettings(s.copy(fontScale = it)) }, valueRange = 0.85f..1.3f)
+            Text("اندازه نوشته: ${"%.2f".format(s.fontScale)}×")
+            Slider(
+                value = s.fontScale,
+                onValueChange = { vm.updateSettings(s.copy(fontScale = it)) },
+                valueRange = 0.85f..1.3f,
+            )
 
             HorizontalDivider()
-            Text("Notifications", style = MaterialTheme.typography.titleMedium)
+            Text("♫  اعلان‌ها", style = MaterialTheme.typography.titleMedium)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Notification sound", Modifier.weight(1f))
+                Text("صدای اعلان", Modifier.weight(1f))
                 Switch(checked = s.sound, onCheckedChange = { vm.updateSettings(s.copy(sound = it)) })
             }
             Button(
@@ -168,23 +214,29 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                         putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Choose notification sound")
                         putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
                         putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
-                        s.notificationSoundUri?.let { putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.net.Uri.parse(it)) }
+                        s.notificationSoundUri?.let {
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.net.Uri.parse(it))
+                        }
                     }
                     soundPicker.launch(intent)
                 },
                 modifier = Modifier.fillMaxWidth().liquidGlass(),
-            ) { Text("Choose notification tone") }
+            ) { Text("♫  انتخاب صدای اعلان") }
             Text(
-                s.notificationSoundUri?.let { "Custom notification tone selected" } ?: "Using the phone's default notification tone",
+                s.notificationSoundUri?.let { "صدای اختصاصی انتخاب شده است" } ?: "از صدای پیش‌فرض گوشی استفاده می‌شود",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             HorizontalDivider()
-            Text("Privacy", style = MaterialTheme.typography.titleMedium)
+            Text("ⓘ  درباره A SMS", style = MaterialTheme.typography.titleMedium)
+            Text("A SMS", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+            Text("پیام‌رسان پیامک محلی برای اندروید", style = MaterialTheme.typography.bodyMedium)
+            Text("سازنده: mamaD(kazeroon)", style = MaterialTheme.typography.bodyMedium)
+            Text("ایمیل: pishi1403@gmail.com", style = MaterialTheme.typography.bodyMedium)
             Text(
-                "Everything stays in this phone's local database. The app asks for no internet permission and has no accounts, ads, or servers.",
-                style = MaterialTheme.typography.bodyMedium,
+                "پیام‌ها روی همین گوشی نگهداری می‌شوند. برای کارکرد پایه برنامه نیازی به حساب کاربری یا سرور نیست.",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

@@ -82,29 +82,33 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Messages",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.headlineMedium,
-                    )
-                    Text(
-                        "$messageCount messages · ${conversations.size} chats",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Column {
+                        Text("A SMS", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineMedium)
+                        Text(
+                            "$messageCount پیام · ${conversations.size} گفتگو",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 },
                 actions = {
-                    TextButton(modifier = Modifier.size(42.dp).liquidGlassCircle(), contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp), onClick = onSettings) { Text("⚙", color = IOSBlue, style = MaterialTheme.typography.titleLarge) }
                     TextButton(
                         modifier = Modifier.size(42.dp).liquidGlassCircle(),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                        onClick = { contactPicker.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)) },
-                    ) { Text("Contacts", color = IOSBlue) }
+                        onClick = onSettings,
+                    ) { Text("⚙", color = IOSBlue, style = MaterialTheme.typography.titleLarge) }
+                    TextButton(
+                        modifier = Modifier.size(42.dp).liquidGlassCircle(),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                        onClick = {
+                            contactPicker.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI))
+                        },
+                    ) { Text("♙", color = IOSBlue, style = MaterialTheme.typography.titleLarge) }
                     TextButton(
                         modifier = Modifier.size(42.dp).liquidGlassCircle(),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                         onClick = { newName = ""; newPhone = ""; showNew = true },
-                    ) { Text("✎", color = IOSBlue, style = MaterialTheme.typography.titleLarge) }
+                    ) { Text("+", color = IOSBlue, style = MaterialTheme.typography.titleLarge) }
                 },
             )
         },
@@ -119,19 +123,19 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(if (MaterialTheme.colorScheme.background == Color.White) Color(0xFFF2F2F7) else MaterialTheme.colorScheme.surfaceVariant)
-                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(14.dp)),
-                placeholder = { Text("⌕  Search") },
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f), RoundedCornerShape(18.dp)),
+                placeholder = { Text("⌕  جستجوی نام، شماره یا پیام") },
                 singleLine = true,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(18.dp),
             )
 
             if (conversations.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        if (query.isBlank()) "No conversations yet. Tap New to start one."
-                        else "Nothing matches that search.",
+                        if (query.isBlank()) "هنوز گفتگویی نداری. برای شروع روی + بزن."
+                        else "نتیجه‌ای برای جستجو پیدا نشد.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(24.dp),
                     )
@@ -141,8 +145,7 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                     items(conversations, key = { it.id }) { c ->
                         Box {
                             Row(
-                                Modifier
-                                    .fillMaxWidth()
+                                Modifier.fillMaxWidth()
                                     .combinedClickable(
                                         onClick = { onOpen(c.id) },
                                         onLongClick = { menuFor = c },
@@ -155,7 +158,7 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Text(
-                                        c.name.take(1),
+                                        c.name.take(1).uppercase(),
                                         color = Color.White,
                                         style = MaterialTheme.typography.titleMedium,
                                     )
@@ -164,7 +167,7 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                                 Column(Modifier.weight(1f)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            if (c.pinned) "📌 ${c.name}" else c.name,
+                                            (if (c.pinned) "📌 " else "") + c.name,
                                             fontWeight = FontWeight.SemiBold,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
@@ -177,7 +180,7 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                                         )
                                     }
                                     Text(
-                                        c.lastText.ifBlank { "No messages yet" },
+                                        c.lastText.ifBlank { "بدون پیام" },
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         style = MaterialTheme.typography.bodyMedium,
@@ -185,37 +188,24 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                                     )
                                 }
                             }
-                            DropdownMenu(
-                                expanded = menuFor?.id == c.id,
-                                onDismissRequest = { menuFor = null },
-                            ) {
+                            DropdownMenu(expanded = menuFor?.id == c.id, onDismissRequest = { menuFor = null }) {
                                 DropdownMenuItem(
-                                    text = { Text(if (c.pinned) "Unpin" else "Pin") },
-                                    onClick = {
-                                        vm.togglePin(c)
-                                        menuFor = null
-                                    },
+                                    text = { Text(if (c.pinned) "📌 برداشتن سنجاق" else "📌 سنجاق گفتگو") },
+                                    onClick = { vm.togglePin(c); menuFor = null },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Log incoming message") },
-                                    onClick = {
-                                        incomingFor = c
-                                        incomingText = ""
-                                        menuFor = null
-                                    },
+                                    text = { Text("✉ ثبت پیام دریافتی") },
+                                    onClick = { incomingFor = c; incomingText = ""; menuFor = null },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
-                                    onClick = {
-                                        deleteFor = c
-                                        menuFor = null
-                                    },
+                                    text = { Text("⌫ حذف گفتگو", color = MaterialTheme.colorScheme.error) },
+                                    onClick = { deleteFor = c; menuFor = null },
                                 )
                             }
                         }
                         HorizontalDivider(
                             Modifier.padding(start = 80.dp),
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
                         )
                     }
                 }
@@ -226,72 +216,52 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
     if (showNew) {
         AlertDialog(
             onDismissRequest = { showNew = false },
-            title = { Text("New conversation") },
+            title = { Text("گفتگوی جدید") },
             text = {
                 Column {
-                    OutlinedTextField(
-                        value = newName,
-                        onValueChange = { newName = it },
-                        singleLine = true,
-                        placeholder = { Text("Name") },
-                    )
-                    OutlinedTextField(
-                        value = newPhone,
-                        onValueChange = { newPhone = it },
-                        singleLine = true,
-                        placeholder = { Text("Phone number, e.g. +4917...") },
-                    )
+                    OutlinedTextField(value = newName, onValueChange = { newName = it }, singleLine = true, placeholder = { Text("نام مخاطب") })
+                    OutlinedTextField(value = newPhone, onValueChange = { newPhone = it }, singleLine = true, placeholder = { Text("شماره تلفن") })
                 }
             },
             confirmButton = {
                 TextButton(
                     enabled = newName.isNotBlank() && newPhone.isNotBlank(),
-                    onClick = {
-                        vm.createConversation(newName, newPhone)
-                        showNew = false
-                    },
-                ) { Text("Create") }
+                    onClick = { vm.createConversation(newName, newPhone); showNew = false },
+                ) { Text("ایجاد گفتگو") }
             },
-            dismissButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { showNew = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { showNew = false }) { Text("لغو") } },
         )
     }
 
     incomingFor?.let { c ->
         AlertDialog(
             onDismissRequest = { incomingFor = null },
-            title = { Text("Message from ${c.name}") },
+            title = { Text("پیام از ${c.name}") },
             text = {
-                OutlinedTextField(
-                    value = incomingText,
-                    onValueChange = { incomingText = it },
-                    placeholder = { Text("What did they say?") },
-                )
+                OutlinedTextField(value = incomingText, onValueChange = { incomingText = it }, placeholder = { Text("متن پیام") })
             },
             confirmButton = {
                 TextButton(
                     enabled = incomingText.isNotBlank(),
-                    onClick = {
-                        vm.logIncoming(c.id, incomingText)
-                        incomingFor = null
-                    },
-                ) { Text("Save") }
+                    onClick = { vm.logIncoming(c.id, incomingText); incomingFor = null },
+                ) { Text("ذخیره") }
             },
-            dismissButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { incomingFor = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { incomingFor = null }) { Text("لغو") } },
         )
     }
 
     deleteFor?.let { c ->
         AlertDialog(
             onDismissRequest = { deleteFor = null },
-            title = { Text("Delete ${c.name}?") },
-            text = { Text("All messages in this conversation will be removed from this phone.") },
+            title = { Text("حذف ${c.name}؟") },
+            text = { Text("تمام پیام‌های این گفتگو از پایگاه داده محلی گوشی حذف می‌شوند.") },
             confirmButton = {
-                TextButton(modifier = Modifier.liquidGlass(), onClick = {
-                    vm.deleteConversation(c.id)
-                    deleteFor = null
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                TextButton(
+                    modifier = Modifier.liquidGlass(),
+                    onClick = { vm.deleteConversation(c.id); deleteFor = null },
+                ) { Text("حذف", color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { deleteFor = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { deleteFor = null }) { Text("لغو") } },
         )
     }
 }
