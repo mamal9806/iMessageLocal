@@ -46,7 +46,7 @@ class ChatRepository(private val dao: ChatDao) {
 
     suspend fun cancelScheduledSms(id: Long) = dao.updateScheduledStatus(id, "CANCELLED")
 
-    suspend fun receiveSms(address: String, body: String, timestamp: Long, contactName: String? = null): Long {
+    suspend fun receiveSms(address: String, body: String, timestamp: Long, contactName: String? = null, markAsSpam: Boolean = false): Long {
         val number = address.trim()
         val normalized = normalizeAddress(number)
         var conversation = dao.getAllConversations().firstOrNull {
@@ -60,7 +60,11 @@ class ChatRepository(private val dao: ChatDao) {
             conversation = conversation.copy(name = contactName)
             dao.updateConversation(conversation)
         }
-        if (conversation.blocked || conversation.spam || conversation.trashed) return conversation.id
+        if (conversation.blocked || conversation.trashed) return conversation.id
+        if (markAsSpam && !conversation.spam) {
+            conversation = conversation.copy(spam = true)
+            dao.updateConversation(conversation)
+        }
         if (!dao.hasIncomingDuplicate(conversation.id, body, timestamp - 5000, timestamp + 5000)) {
             dao.insertMessage(MessageEntity(conversationId = conversation.id, text = body, isOutgoing = false, createdAt = timestamp, deliveryState = "RECEIVED"))
             dao.updateConversation(conversation.copy(lastText = body, updatedAt = timestamp, unreadCount = conversation.unreadCount + 1))
