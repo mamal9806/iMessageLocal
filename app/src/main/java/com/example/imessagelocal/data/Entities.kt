@@ -45,3 +45,15 @@ data class MessageEntity(
     @ColumnInfo(defaultValue = "'LOCAL'") val deliveryState: String = "LOCAL",
     val simSubscriptionId: Int? = null,
 )
+
+
+@Entity(tableName = "scheduled_sms")
+data class ScheduledSmsEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val conversationId: Long,
+    val phoneNumber: String,
+    val text: String,
+    val scheduledAt: Long,
+    val simSubscriptionId: Int? = null,
+    @ColumnInfo(defaultValue = "'PENDING'") val status: String = "PENDING",
+)
