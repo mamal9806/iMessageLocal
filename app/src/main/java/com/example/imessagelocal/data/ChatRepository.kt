@@ -39,7 +39,7 @@ class ChatRepository(private val dao: ChatDao) {
         }
         if (!dao.hasIncomingDuplicate(conversation.id, body, timestamp - 5000, timestamp + 5000)) {
             dao.insertMessage(MessageEntity(conversationId = conversation.id, text = body, isOutgoing = false, createdAt = timestamp, deliveryState = "RECEIVED"))
-            dao.updateConversation(conversation.copy(lastText = body, updatedAt = timestamp))
+            dao.updateConversation(conversation.copy(lastText = body, updatedAt = timestamp, unreadCount = conversation.unreadCount + 1))
         }
         return conversation.id
     }
@@ -51,6 +51,7 @@ class ChatRepository(private val dao: ChatDao) {
     }
 
     suspend fun updateDelivery(id: Long, state: String) = dao.updateDeliveryState(id, state)
+    suspend fun markConversationRead(id: Long) = dao.markConversationRead(id)
     suspend fun setConversationSim(id: Long, subId: Int?) = dao.setConversationSim(id, subId)
 
     suspend fun addMessage(
