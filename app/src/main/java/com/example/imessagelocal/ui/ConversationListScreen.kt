@@ -120,12 +120,21 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
         AlertDialog(
             onDismissRequest = { menuFor = null },
             title = { Text(c.name) },
-            text = { Text(if (english) "Choose a chat action" else "عملیات گفتگو را انتخاب کنید") },
+            text = {
+                Column {
+                    Text(if (english) "Choose a chat action" else "عملیات گفتگو را انتخاب کنید")
+                    TextButton(onClick = { vm.moveConversationToFolder(c.id, "archive"); menuFor = null }) { Text(if (english) "Archive chat" else "آرشیو گفتگو") }
+                    TextButton(onClick = { vm.moveConversationToFolder(c.id, "trash"); menuFor = null }) { Text(if (english) "Move to trash" else "انتقال به سطل زباله") }
+                    TextButton(onClick = { vm.moveConversationToFolder(c.id, "spam"); menuFor = null }) { Text(if (english) "Report as spam" else "گزارش به‌عنوان اسپم") }
+                    TextButton(onClick = { vm.moveConversationToFolder(c.id, "blocked"); menuFor = null }) { Text(if (english) "Block number" else "مسدود کردن شماره") }
+                    TextButton(onClick = { vm.markConversationRead(c.id); menuFor = null }) { Text(if (english) "Mark as read" else "علامت‌گذاری به‌عنوان خوانده‌شده") }
+                }
+            },
             confirmButton = {
                 TextButton(onClick = { vm.togglePin(c); menuFor = null }) { Text(if (c.pinned) (if (english) "Unpin chat" else "برداشتن سنجاق") else (if (english) "Pin chat" else "سنجاق کردن")) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDeleteFor = c; menuFor = null }) { Text(if (english) "Delete chat" else "حذف گفتگو", color = MaterialTheme.colorScheme.error) }
+                TextButton(onClick = { confirmDeleteFor = c; menuFor = null }) { Text(if (english) "More delete options" else "گزینه حذف", color = MaterialTheme.colorScheme.error) }
             },
         )
     }
@@ -133,11 +142,11 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
     confirmDeleteFor?.let { c ->
         AlertDialog(
             onDismissRequest = { confirmDeleteFor = null },
-            title = { Text(if (english) "Delete chat?" else "حذف گفتگو؟") },
-            text = { Text(if (english) "All messages in this chat will be deleted from A SMS. This cannot be undone." else "تمام پیام‌های این گفتگو از A SMS حذف می‌شوند. این کار قابل بازگشت نیست.") },
+            title = { Text(if (english) "Move chat to trash?" else "انتقال گفتگو به سطل زباله؟") },
+            text = { Text(if (english) "The conversation will be moved to Trash. You can restore it or permanently delete it there." else "گفتگو به سطل زباله منتقل می‌شود. از آنجا می‌توانید آن را بازگردانید یا برای همیشه حذف کنید.") },
             confirmButton = {
-                TextButton(onClick = { vm.deleteConversation(c.id); confirmDeleteFor = null }) {
-                    Text(if (english) "Delete" else "حذف کامل", color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = { vm.moveConversationToFolder(c.id, "trash"); confirmDeleteFor = null }) {
+                    Text(if (english) "Move to trash" else "انتقال به سطل زباله", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = { TextButton(onClick = { confirmDeleteFor = null }) { Text(if (english) "Cancel" else "انصراف") } },
@@ -197,6 +206,7 @@ private fun ConversationRow(c: ConversationEntity, english: Boolean, onClick: ()
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(if (c.pinned) "📌 ${c.name}" else c.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                if (c.unreadCount > 0) Text(c.unreadCount.toString(), color = IOSBlue, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                 Text(formatListTime(c.updatedAt), color = TextSecondary, style = MaterialTheme.typography.labelSmall)
             }
             Spacer(Modifier.height(3.dp))
