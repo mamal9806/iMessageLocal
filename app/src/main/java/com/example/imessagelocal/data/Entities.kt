@@ -44,6 +44,7 @@ data class MessageEntity(
     val replyPreview: String? = null,
     @ColumnInfo(defaultValue = "'LOCAL'") val deliveryState: String = "LOCAL",
     val simSubscriptionId: Int? = null,
+    @ColumnInfo(defaultValue = "0") val pinned: Boolean = false,
 )
 
 
