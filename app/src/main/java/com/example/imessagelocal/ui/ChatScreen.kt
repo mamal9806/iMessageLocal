@@ -14,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.imessagelocal.data.MessageEntity
@@ -162,64 +164,103 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 }
             }
         }
-        Row(
-            Modifier.fillMaxWidth().imePadding().padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.Bottom,
+        Column(
+            Modifier.fillMaxWidth()
+                .imePadding()
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .clip(RoundedCornerShape(26.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f))
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.28f), RoundedCornerShape(26.dp))
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp),
         ) {
-            Box {
-                TextButton(onClick = { showTemplates = true }, modifier = Modifier.padding(bottom = 4.dp)) { Text("قالب", color = IOSBlue) }
+            // Quick actions are grouped above the editor so they are easy to spot and tap.
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(
+                    Modifier.clip(RoundedCornerShape(18.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
+                        .clickable { showTemplates = true }
+                        .padding(horizontal = 11.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Default.Message, contentDescription = "قالب پیام", tint = IOSBlue, modifier = Modifier.size(18.dp))
+                    Text("قالب آماده", color = IOSBlue, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp))
+                }
                 androidx.compose.material3.DropdownMenu(expanded = showTemplates, onDismissRequest = { showTemplates = false }) {
                     listOf("سلام، حالت چطوره؟", "لطفاً با من تماس بگیر.", "الان فرصت صحبت ندارم؛ بعداً تماس می‌گیرم.", "ممنون از لطفت.", "در راه هستم و به‌زودی می‌رسم.").forEach { template ->
                         androidx.compose.material3.DropdownMenuItem(text = { Text(template) }, onClick = { draft = template; showTemplates = false })
                     }
                 }
+                Row(
+                    Modifier.clip(RoundedCornerShape(18.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clickable {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                                simOptions = activeSims(context)
+                                showSimPicker = true
+                            } else simPermission.launch(Manifest.permission.READ_PHONE_STATE)
+                        }
+                        .padding(horizontal = 11.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Default.Call, contentDescription = "انتخاب سیم‌کارت", tint = TextSecondary, modifier = Modifier.size(18.dp))
+                    Text("سیم‌کارت", color = TextPrimary, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp))
+                }
+                Spacer(Modifier.weight(1f))
+                Text("پیامک", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
             }
-            OutlinedButton(
-                onClick = {
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
-                        simOptions = activeSims(context)
-                        showSimPicker = true
-                    } else simPermission.launch(Manifest.permission.READ_PHONE_STATE)
-                },
-                modifier = Modifier.padding(bottom = 4.dp),
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom,
             ) {
-                Icon(Icons.Default.Call, contentDescription = "سیم‌کارت", modifier = Modifier.size(18.dp))
-                Text("SIM", modifier = Modifier.padding(start = 4.dp))
+                OutlinedTextField(
+                    value = draft,
+                    onValueChange = { draft = it },
+                    modifier = Modifier.weight(1f).widthIn(min = 0.dp),
+                    placeholder = { Text("پیام خود را بنویسید…", color = TextSecondary) },
+                    shape = RoundedCornerShape(21.dp),
+                    minLines = 2,
+                    maxLines = 5,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface),
+                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
+                        focusedBorderColor = IOSBlue,
+                        cursorColor = IOSBlue,
+                    ),
+                )
+                Spacer(Modifier.width(7.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    IconButton(
+                        onClick = {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+                                schedulePermission.launch(Manifest.permission.SEND_SMS)
+                            } else openSchedulePicker()
+                        },
+                        enabled = draft.isNotBlank(),
+                        modifier = Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface),
+                    ) { Icon(Icons.Default.Schedule, "زمان‌بندی پیامک", tint = if (draft.isNotBlank()) IOSBlue else TextSecondary) }
+                    Text("زمان", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
+                }
+                Spacer(Modifier.width(4.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    IconButton(
+                        onClick = {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
+                                vm.sendSms(conversationId, draft.trim(), replyTo); draft = ""; replyTo = null
+                            } else smsPermission.launch(Manifest.permission.SEND_SMS)
+                        },
+                        enabled = draft.isNotBlank(),
+                        modifier = Modifier.size(48.dp).clip(CircleShape).background(if (draft.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
+                    ) { Icon(Icons.Default.Send, "ارسال پیامک", tint = if (draft.isNotBlank()) MaterialTheme.colorScheme.onPrimary else TextSecondary) }
+                    Text("ارسال", color = if (draft.isNotBlank()) IOSBlue else TextSecondary, style = MaterialTheme.typography.labelSmall)
+                }
             }
-            Spacer(Modifier.width(6.dp))
-            OutlinedTextField(
-                value = draft,
-                onValueChange = { draft = it },
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("پیامک…", color = TextSecondary) },
-                shape = RoundedCornerShape(25.dp),
-                maxLines = 5,
-                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    focusedBorderColor = IOSBlue,
-                ),
-            )
-            Spacer(Modifier.width(8.dp))
-            IconButton(
-                onClick = {
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
-                        schedulePermission.launch(Manifest.permission.SEND_SMS)
-                    } else openSchedulePicker()
-                },
-                enabled = draft.isNotBlank(),
-                modifier = Modifier.size(44.dp),
-            ) { Icon(Icons.Default.Schedule, "زمان‌بندی پیامک", tint = IOSBlue) }
-            IconButton(
-                onClick = {
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
-                        vm.sendSms(conversationId, draft.trim(), replyTo); draft = ""; replyTo = null
-                    } else smsPermission.launch(Manifest.permission.SEND_SMS)
-                },
-                enabled = draft.isNotBlank(),
-                modifier = Modifier.size(52.dp).clip(CircleShape).background(if (draft.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
-            ) { Icon(Icons.Default.Send, "ارسال", tint = MaterialTheme.colorScheme.onPrimary) }
         }
     }
 
