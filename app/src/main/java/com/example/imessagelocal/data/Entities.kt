@@ -19,6 +19,7 @@ data class ConversationEntity(
     @ColumnInfo(defaultValue = "0") val archived: Boolean = false,
     @ColumnInfo(defaultValue = "1") val notificationsEnabled: Boolean = true,
     val contactUri: String? = null,
+    @ColumnInfo(defaultValue = "0") val unreadCount: Int = 0,
 )
 
 @Entity(
