@@ -95,6 +95,15 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(14.dp))
+            SectionTitle("رنگ‌بندی")
+            SettingsCard {
+                listOf(0 to "آبی", 1 to "بنفش", 2 to "فیروزه‌ای", 3 to "کهربایی", 4 to "صورتی").forEach { (theme, label) ->
+                    Row(Modifier.fillMaxWidth().clickable { vm.updateSettings(s.copy(accentTheme = theme)) }.padding(horizontal = 14.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
+                        RadioButton(selected = s.accentTheme == theme, onClick = { vm.updateSettings(s.copy(accentTheme = theme)) })
+                    }
+                }
+            }
             Spacer(Modifier.height(18.dp))
             SectionTitle("عمومی")
             SettingsCard {
