@@ -2,6 +2,7 @@ package com.example.imessagelocal.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -96,6 +97,10 @@ fun IMessageTheme(
         LocalLayoutDirection provides LayoutDirection.Rtl,
         LocalDensity provides Density(density.density, density.fontScale * fontScale),
     ) {
-        MaterialTheme(colorScheme = colors, typography = typography, content = content)
+        MaterialTheme(colorScheme = colors, typography = typography) {
+            Surface(color = colors.background, contentColor = colors.onBackground) {
+                content()
+            }
+        }
     }
 }
