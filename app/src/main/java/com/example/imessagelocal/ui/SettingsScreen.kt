@@ -91,7 +91,7 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
             Text(if (english) "Settings" else "تنظیمات", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp)) {
-            SettingsHero()
+            SettingsHero(english)
             SectionTitle(if (english) "Appearance" else "ظاهر برنامه")
             SettingsCard {
                 if (english) listOf(0 to "System default", 1 to "Light", 2 to "Dark") else listOf(0 to "پیروی از سیستم", 1 to "روشن", 2 to "تاریک").forEach { (mode, label) ->
@@ -154,34 +154,34 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 SettingRow(Icons.Default.Info, if (english) "About the app" else "درباره برنامه", "A SMS · 1.0.0") { showAbout = true }
             }
             Spacer(Modifier.height(20.dp))
-            Text("A SMS\nFast · Beautiful · Secure", color = TextSecondary, modifier = Modifier.align(Alignment.CenterHorizontally))
+            Text(if (english) "A SMS\nFast · Beautiful · Secure" else "A SMS\nسریع · زیبا · امن", color = TextSecondary, modifier = Modifier.align(Alignment.CenterHorizontally))
             Spacer(Modifier.height(20.dp))
         }
     }
 
     if (showSim) {
-        AlertLikeDialog("انتخاب سیم‌کارت", buildList {
-            add("پیش‌فرض سیستم" to false)
-            simOptions.forEachIndexed { i, info -> add("SIM ${i + 1} · ${info.carrierName ?: "اپراتور"}" to (s.defaultSimSubscriptionId == info.subscriptionId)) }
+        AlertLikeDialog(if (english) "Choose SIM" else "انتخاب سیم‌کارت", buildList {
+            add((if (english) "System default" else "پیش‌فرض سیستم") to false)
+            simOptions.forEachIndexed { i, info -> add("SIM ${i + 1} · ${info.carrierName ?: "Carrier"}" to (s.defaultSimSubscriptionId == info.subscriptionId)) }
         }) { selected ->
-            if (selected == "پیش‌فرض سیستم") vm.updateSettings(s.copy(defaultSimSubscriptionId = -1))
+            if (selected == (if (english) "System default" else "پیش‌فرض سیستم")) vm.updateSettings(s.copy(defaultSimSubscriptionId = -1))
             else simOptions.firstOrNull { "SIM ${simOptions.indexOf(it) + 1} · ${it.carrierName ?: "اپراتور"}" == selected }?.let { vm.updateSettings(s.copy(defaultSimSubscriptionId = it.subscriptionId)) }
             showSim = false
         }
     }
     if (showAbout) {
-        AlertLikeDialog("درباره A SMS", listOf("نسخه 1.0.0" to false, "سازنده: mamaD (kazeroon)" to false, "ایمیل: pishi1403@gmail.com" to false)) { showAbout = false }
+        AlertLikeDialog(if (english) "About A SMS" else "درباره A SMS", if (english) listOf("Version 1.0.0" to false, "Developer: mamaD (kazeroon)" to false, "Email: pishi1403@gmail.com" to false) else listOf("نسخه 1.0.0" to false, "سازنده: mamaD (kazeroon)" to false, "ایمیل: pishi1403@gmail.com" to false)) { showAbout = false }
     }
 }
 
 @Composable
-private fun SettingsHero() {
+private fun SettingsHero(english: Boolean) {
     Row(Modifier.fillMaxWidth().liquidGlass().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(62.dp).clip(RoundedCornerShape(18.dp)).background(BrushIcon)) { Icon(Icons.Default.Notifications, null, tint = Color.White, modifier = Modifier.padding(15.dp)) }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text("A SMS", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-            Text("ساخته شده با ❤️ برای شما", color = TextSecondary)
+            Text(if (english) "Made with ❤️ for you" else "ساخته شده با ❤️ برای شما", color = TextSecondary)
         }
     }
 }
@@ -216,7 +216,7 @@ private fun AlertLikeDialog(title: String, options: List<Pair<String, Boolean>>,
         onDismissRequest = { onSelected("") },
         title = { Text(title) },
         text = { Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { options.forEach { (label, selected) -> TextButton(onClick = { onSelected(label) }, modifier = Modifier.fillMaxWidth()) { Text(if (selected) "✓  $label" else label) } } } },
-        confirmButton = { TextButton(onClick = { onSelected("") }) { Text("لغو") } },
+        confirmButton = { TextButton(onClick = { onSelected("") }) { Text(if (english) "Cancel" else "لغو") } },
     )
 }
 
