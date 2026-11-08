@@ -52,6 +52,10 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
     val roleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
     val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val contactsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val historyLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) vm.importSmsHistory()
+        else simMessage = "برای انتقال تاریخچه، مجوز خواندن پیامک لازم است."
+    }
     val simPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
             simOptions = try { context.getSystemService(SubscriptionManager::class.java).activeSubscriptionInfoList.orEmpty() }
@@ -96,6 +100,16 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 }
             }, modifier = Modifier.fillMaxWidth().liquidGlass()) { Text("Set as default SMS app") }
             Text("Incoming SMS reception and SMS-provider integration require this app to hold the system SMS role.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Button(
+                onClick = {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED) {
+                        vm.importSmsHistory()
+                    } else historyLauncher.launch(Manifest.permission.READ_SMS)
+                },
+                modifier = Modifier.fillMaxWidth().liquidGlass(),
+            ) { Text("Import SMS history from this phone") }
+            Text("پیام‌های دریافتی و ارسالی از صندوق پیامک گوشی خوانده می‌شوند؛ موارد تکراری دوباره ثبت نمی‌شوند.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (vm.smsStatus.isNotBlank()) Text(vm.smsStatus, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
             Button(onClick = {
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) contactsLauncher.launch(Manifest.permission.READ_CONTACTS)
             }, modifier = Modifier.fillMaxWidth().liquidGlass()) { Text("Allow contact names") }

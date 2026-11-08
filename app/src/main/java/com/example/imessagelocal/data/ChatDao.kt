@@ -36,6 +36,12 @@ interface ChatDao {
     @Query("DELETE FROM conversations WHERE id = :id")
     suspend fun deleteConversation(id: Long)
 
+    @Query("SELECT COUNT(*) FROM messages")
+    fun observeMessageCount(): Flow<Int>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM messages WHERE conversationId=:conversationId AND text=:text AND isOutgoing=:outgoing AND createdAt BETWEEN :from AND :to)")
+    suspend fun hasMessageDuplicate(conversationId: Long, text: String, outgoing: Boolean, from: Long, to: Long): Boolean
+
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY createdAt ASC, id ASC")
     fun observeMessages(conversationId: Long): Flow<List<MessageEntity>>
 

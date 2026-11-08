@@ -4,7 +4,7 @@ import android.app.Application
 import android.telephony.SmsManager
 import android.os.Build
 import android.app.PendingIntent
-import android.content.Intent
+import android.content.Intent\nimport android.provider.Telephony\nimport android.content.pm.PackageManager\nimport androidx.core.content.ContextCompat\nimport android.Manifest
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -49,9 +49,61 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val everything: StateFlow<List<ConversationEntity>> = repo.conversations("")
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    val totalMessageCount: StateFlow<Int> = repo.messageCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
     val messages: StateFlow<List<MessageEntity>> = openId
         .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else repo.messages(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun importSmsHistory() {
+        viewModelScope.launch {
+            if (ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+                smsStatus = "مجوز خواندن پیامک‌ها داده نشده است."
+                return@launch
+            }
+            var imported = 0
+            var skipped = 0
+            try {
+                val projection = arrayOf(
+                    Telephony.Sms.ADDRESS,
+                    Telephony.Sms.BODY,
+                    Telephony.Sms.DATE,
+                    Telephony.Sms.TYPE,
+                )
+                getApplication<Application>().contentResolver.query(
+                    Telephony.Sms.CONTENT_URI, projection, null, null,
+                    "${Telephony.Sms.DATE} ASC"
+                )?.use { cursor ->
+                    val addressCol = cursor.getColumnIndex(Telephony.Sms.ADDRESS)
+                    val bodyCol = cursor.getColumnIndex(Telephony.Sms.BODY)
+                    val dateCol = cursor.getColumnIndex(Telephony.Sms.DATE)
+                    val typeCol = cursor.getColumnIndex(Telephony.Sms.TYPE)
+                    while (cursor.moveToNext()) {
+                        val address = cursor.getString(addressCol).orEmpty()
+                        val body = cursor.getString(bodyCol).orEmpty()
+                        val date = cursor.getLong(dateCol)
+                        val type = cursor.getInt(typeCol)
+                        if (address.isBlank() || body.isBlank() || date <= 0L) {
+                            skipped++
+                        } else if (type == Telephony.Sms.MESSAGE_TYPE_INBOX || type == Telephony.Sms.MESSAGE_TYPE_SENT ||
+                            type == Telephony.Sms.MESSAGE_TYPE_OUTBOX || type == Telephony.Sms.MESSAGE_TYPE_FAILED) {
+                            repo.importHistoricalSms(
+                                address, body, date,
+                                type != Telephony.Sms.MESSAGE_TYPE_INBOX
+                            )
+                            imported++
+                        } else skipped++
+                    }
+                }
+                smsStatus = "تاریخچه پیامک بررسی شد؛ $imported پیام وارد/بررسی شد."
+            } catch (e: SecurityException) {
+                smsStatus = "دسترسی به تاریخچه پیامک‌ها مجاز نیست."
+            } catch (e: Exception) {
+                smsStatus = "خطا در انتقال پیامک‌ها: ${e.message ?: "نامشخص"}"
+            }
+        }
+    }
 
     fun updateSettings(s: Settings) {
         settings = s

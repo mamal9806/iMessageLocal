@@ -7,7 +7,7 @@ class ChatRepository(private val dao: ChatDao) {
     fun conversations(query: String) =
         if (query.isBlank()) dao.observeConversations() else dao.searchConversations(query.trim())
 
-    fun messages(conversationId: Long) = dao.observeMessages(conversationId)
+    fun messages(conversationId: Long) = dao.observeMessages(conversationId)\n    fun messageCount() = dao.observeMessageCount()
 
     suspend fun createConversation(name: String, phoneNumber: String): Long {
         val cleanNumber = phoneNumber.trim()
@@ -40,6 +40,39 @@ class ChatRepository(private val dao: ChatDao) {
         if (!dao.hasIncomingDuplicate(conversation.id, body, timestamp - 5000, timestamp + 5000)) {
             dao.insertMessage(MessageEntity(conversationId = conversation.id, text = body, isOutgoing = false, createdAt = timestamp, deliveryState = "RECEIVED"))
             dao.updateConversation(conversation.copy(lastText = body, updatedAt = timestamp))
+        }
+        return conversation.id
+    }
+
+
+    suspend fun importHistoricalSms(address: String, body: String, timestamp: Long, outgoing: Boolean): Long {
+        val number = address.trim().ifBlank { "Unknown" }
+        var conversation = dao.getAllConversations().firstOrNull {
+            it.phoneNumber.isNotBlank() && PhoneNumberUtils.compare(it.phoneNumber, number)
+        }
+        if (conversation == null) {
+            val id = dao.insertConversation(
+                ConversationEntity(name = number, phoneNumber = number, avatarColor = AVATAR_COLORS.random())
+            )
+            conversation = dao.getConversation(id)!!
+        }
+        val duplicate = dao.hasMessageDuplicate(
+            conversation.id, body, outgoing, timestamp - 3000L, timestamp + 3000L
+        )
+        if (!duplicate) {
+            dao.insertMessage(
+                MessageEntity(
+                    conversationId = conversation.id,
+                    text = body,
+                    isOutgoing = outgoing,
+                    createdAt = timestamp,
+                    deliveryState = if (outgoing) "IMPORTED" else "RECEIVED",
+                )
+            )
+            val latest = dao.getConversation(conversation.id)
+            if (latest != null && timestamp >= latest.updatedAt) {
+                dao.updateConversation(latest.copy(lastText = body, updatedAt = timestamp))
+            }
         }
         return conversation.id
     }

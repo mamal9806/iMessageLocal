@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.padding\nimport androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.border
@@ -106,12 +106,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     }
                 },
                 navigationIcon = { TextButton(onClick = onBack) { Text("‹", color = IOSBlue, style = MaterialTheme.typography.headlineLarge) } },
-                actions = { TextButton(onClick = {
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
-                        simOptions = try { context.getSystemService(SubscriptionManager::class.java).activeSubscriptionInfoList.orEmpty() } catch (_: SecurityException) { emptyList() }
-                        showSimPicker = true
-                    } else simPermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
-                }) { Text("SIM", color = IOSBlue) } },
+                actions = { },
             )
         },
         bottomBar = {
@@ -148,6 +143,17 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                         .padding(horizontal = 10.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.Bottom,
                 ) {
+                    TextButton(
+                        onClick = {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                                simOptions = try { context.getSystemService(SubscriptionManager::class.java).activeSubscriptionInfoList.orEmpty() } catch (_: SecurityException) { emptyList() }
+                                showSimPicker = true
+                            } else simPermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+                        },
+                        modifier = Modifier.size(46.dp).liquidGlassCircle(),
+                        contentPadding = PaddingValues(0.dp),
+                    ) { Text("SIM", color = IOSBlue, style = MaterialTheme.typography.labelSmall) }
+                    Spacer(Modifier.width(7.dp))
                     OutlinedTextField(
                         value = draft,
                         onValueChange = { draft = it },
@@ -158,7 +164,8 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     )
                     Spacer(Modifier.width(8.dp))
                     Button(
-                        modifier = Modifier.liquidGlass(),
+                        modifier = Modifier.size(50.dp).liquidGlassCircle(),
+                        contentPadding = PaddingValues(0.dp),
                         enabled = draft.isNotBlank(),
                         onClick = {
                             val text = draft.trim()
