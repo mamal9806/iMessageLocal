@@ -7,7 +7,8 @@ class ChatRepository(private val dao: ChatDao) {
     fun conversations(query: String) =
         if (query.isBlank()) dao.observeConversations() else dao.searchConversations(query.trim())
 
-    fun messages(conversationId: Long) = dao.observeMessages(conversationId)\n    fun messageCount() = dao.observeMessageCount()
+    fun messages(conversationId: Long) = dao.observeMessages(conversationId)
+    fun messageCount() = dao.observeMessageCount()
 
     suspend fun createConversation(name: String, phoneNumber: String): Long {
         val cleanNumber = phoneNumber.trim()

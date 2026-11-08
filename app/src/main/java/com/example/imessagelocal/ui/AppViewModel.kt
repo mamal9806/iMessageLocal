@@ -4,7 +4,11 @@ import android.app.Application
 import android.telephony.SmsManager
 import android.os.Build
 import android.app.PendingIntent
-import android.content.Intent\nimport android.provider.Telephony\nimport android.content.pm.PackageManager\nimport androidx.core.content.ContextCompat\nimport android.Manifest
+import android.content.Intent
+import android.provider.Telephony
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import android.Manifest
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue

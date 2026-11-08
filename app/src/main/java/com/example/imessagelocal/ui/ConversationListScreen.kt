@@ -52,7 +52,8 @@ import com.example.imessagelocal.data.ConversationEntity
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings: () -> Unit) {
-    val conversations by vm.conversations.collectAsStateWithLifecycle()\n    val messageCount by vm.totalMessageCount.collectAsStateWithLifecycle()
+    val conversations by vm.conversations.collectAsStateWithLifecycle()
+    val messageCount by vm.totalMessageCount.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
     var showNew by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
