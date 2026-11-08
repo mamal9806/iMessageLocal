@@ -24,6 +24,13 @@ class ChatRepository(private val dao: ChatDao) {
 
     suspend fun getConversation(id: Long) = dao.getConversation(id)
 
+    fun scheduledMessages(conversationId: Long) = dao.observeScheduled(conversationId)
+
+    suspend fun addScheduledSms(conversationId: Long, phoneNumber: String, text: String, scheduledAt: Long, subId: Int?): Long =
+        dao.insertScheduled(ScheduledSmsEntity(conversationId = conversationId, phoneNumber = phoneNumber, text = text, scheduledAt = scheduledAt, simSubscriptionId = subId))
+
+    suspend fun cancelScheduledSms(id: Long) = dao.updateScheduledStatus(id, "CANCELLED")
+
     suspend fun receiveSms(address: String, body: String, timestamp: Long, contactName: String? = null): Long {
         val number = address.trim()
         var conversation = dao.getAllConversations().firstOrNull {
