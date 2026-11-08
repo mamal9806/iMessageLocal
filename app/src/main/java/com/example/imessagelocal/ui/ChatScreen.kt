@@ -55,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.border
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -218,7 +219,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 },
                 enabled = draft.isNotBlank(),
                 modifier = Modifier.size(52.dp).clip(CircleShape).background(if (draft.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
-            ) { Icon(Icons.Default.Send, "ارسال", tint = Color.White) }
+            ) { Icon(Icons.Default.Send, "ارسال", tint = MaterialTheme.colorScheme.onPrimary) }
         }
     }
 
@@ -271,7 +272,14 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MessageBubble(m: MessageEntity, onLongPress: () -> Unit) {
-    val shape = RoundedCornerShape(22.dp)
+    // The selected accent colors the bubble surface and its outline, never the message text.
+    val shape = if (m.isOutgoing) {
+        RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomStart = 7.dp, bottomEnd = 22.dp)
+    } else {
+        RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomStart = 22.dp, bottomEnd = 7.dp)
+    }
+    val accent = MaterialTheme.colorScheme.primary
+    val bubbleColor = if (m.isOutgoing) accent.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant
     Row(Modifier.fillMaxWidth(), horizontalArrangement = if (m.isOutgoing) Arrangement.Start else Arrangement.End) {
         Column(
             modifier = Modifier.widthIn(max = 300.dp).combinedClickable(onClick = {}, onLongClick = onLongPress),
@@ -280,12 +288,17 @@ private fun MessageBubble(m: MessageEntity, onLongPress: () -> Unit) {
             Box(
                 Modifier
                     .clip(shape)
-                    .background(if (m.isOutgoing) androidx.compose.ui.graphics.Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.78f))) else androidx.compose.ui.graphics.Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surfaceVariant)))
+                    .background(bubbleColor)
+                    .border(
+                        width = if (m.isOutgoing) 1.4.dp else 0.7.dp,
+                        color = if (m.isOutgoing) accent.copy(alpha = 0.72f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.22f),
+                        shape = shape,
+                    )
                     .padding(horizontal = 16.dp, vertical = 11.dp),
             ) {
-                Text(m.text, color = if (m.isOutgoing) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge)
+                Text(m.text, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge)
             }
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)) {
                 Text(formatTime(m.createdAt), color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                 if (m.isOutgoing) Text("  ${deliveryLabel(m.deliveryState)}", color = if (m.deliveryState == "DELIVERED") SuccessGreen else TextSecondary, style = MaterialTheme.typography.labelSmall)
                 if (m.edited) Text(" · ویرایش‌شده", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
