@@ -117,7 +117,10 @@ class ChatRepository(private val dao: ChatDao) {
     suspend fun togglePin(conversation: ConversationEntity) =
         dao.updateConversation(conversation.copy(pinned = !conversation.pinned))
 
-    suspend fun deleteConversation(id: Long) = dao.deleteConversation(id)
+    suspend fun deleteConversation(id: Long) {
+        dao.deleteScheduledForConversation(id)
+        dao.deleteConversation(id)
+    }
 
     private fun normalizeAddress(value: String): String {
         val trimmed = value.trim()
