@@ -123,7 +123,22 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
             Spacer(Modifier.height(18.dp))
             SectionTitle("عمومی")
             SettingsCard {
-                SettingRow(Icons.Default.Language, "زبان برنامه", "فارسی", null)
+                Row(
+                    Modifier.fillMaxWidth().clickable { vm.updateSettings(s.copy(language = if (s.language == 0) 1 else 0)) }.padding(horizontal = 14.dp, vertical = 15.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Language, null, tint = IOSBlue, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(if (s.language == 1) "App language" else "زبان برنامه", fontWeight = FontWeight.Medium)
+                        Text(if (s.language == 1) "English" else "فارسی", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                    }
+                    TextButton(onClick = { vm.updateSettings(s.copy(language = if (s.language == 0) 1 else 0)) }) {
+                        Text(if (s.language == 1) "فارسی" else "English", color = IOSBlue)
+                    }
+                }
                 DividerLine()
                 SettingRow(Icons.Default.VolumeUp, "صدای نوتیفیکیشن", if (s.sound) "صدای پیش‌فرض" else "خاموش") { vm.updateSettings(s.copy(sound = !s.sound)) }
                 DividerLine()
