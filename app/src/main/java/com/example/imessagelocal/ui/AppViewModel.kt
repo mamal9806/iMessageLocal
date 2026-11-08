@@ -64,6 +64,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun open(id: Long?) {
         openId.value = id
+        if (id != null) viewModelScope.launch { repo.markConversationRead(id) }
     }
 
     fun conversationName(id: Long): String =
