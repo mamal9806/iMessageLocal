@@ -60,6 +60,7 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
     var newName by remember { mutableStateOf("") }
     var newPhone by remember { mutableStateOf("") }
     var menuFor by remember { mutableStateOf<ConversationEntity?>(null) }
+    var confirmDeleteFor by remember { mutableStateOf<ConversationEntity?>(null) }
     val context = LocalContext.current
 
     val contactPicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -121,8 +122,22 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                 TextButton(onClick = { vm.togglePin(c); menuFor = null }) { Text(if (c.pinned) "برداشتن سنجاق" else "سنجاق کردن") }
             },
             dismissButton = {
-                TextButton(onClick = { vm.deleteConversation(c.id); menuFor = null }) { Text("حذف", color = MaterialTheme.colorScheme.error) }
+                TextButton(onClick = { confirmDeleteFor = c; menuFor = null }) { Text("حذف گفتگو", color = MaterialTheme.colorScheme.error) }
             },
+        )
+    }
+
+    confirmDeleteFor?.let { c ->
+        AlertDialog(
+            onDismissRequest = { confirmDeleteFor = null },
+            title = { Text("حذف گفتگو؟") },
+            text = { Text("تمام پیام‌های این گفتگو از A SMS حذف می‌شوند. این کار قابل بازگشت نیست.") },
+            confirmButton = {
+                TextButton(onClick = { vm.deleteConversation(c.id); confirmDeleteFor = null }) {
+                    Text("حذف کامل", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmDeleteFor = null }) { Text("انصراف") } },
         )
     }
 
