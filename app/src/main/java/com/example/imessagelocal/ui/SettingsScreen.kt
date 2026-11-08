@@ -163,14 +163,14 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
         AlertLikeDialog(if (english) "Choose SIM" else "انتخاب سیم‌کارت", buildList {
             add((if (english) "System default" else "پیش‌فرض سیستم") to false)
             simOptions.forEachIndexed { i, info -> add("SIM ${i + 1} · ${info.carrierName ?: "Carrier"}" to (s.defaultSimSubscriptionId == info.subscriptionId)) }
-        }) { selected ->
+        }, english) { selected ->
             if (selected == (if (english) "System default" else "پیش‌فرض سیستم")) vm.updateSettings(s.copy(defaultSimSubscriptionId = -1))
-            else simOptions.firstOrNull { "SIM ${simOptions.indexOf(it) + 1} · ${it.carrierName ?: "اپراتور"}" == selected }?.let { vm.updateSettings(s.copy(defaultSimSubscriptionId = it.subscriptionId)) }
+            else simOptions.firstOrNull { "SIM ${simOptions.indexOf(it) + 1} · ${it.carrierName ?: if (english) "Carrier" else "اپراتور"}" == selected }?.let { vm.updateSettings(s.copy(defaultSimSubscriptionId = it.subscriptionId)) }
             showSim = false
         }
     }
     if (showAbout) {
-        AlertLikeDialog(if (english) "About A SMS" else "درباره A SMS", if (english) listOf("Version 1.0.0" to false, "Developer: mamaD (kazeroon)" to false, "Email: pishi1403@gmail.com" to false) else listOf("نسخه 1.0.0" to false, "سازنده: mamaD (kazeroon)" to false, "ایمیل: pishi1403@gmail.com" to false)) { showAbout = false }
+        AlertLikeDialog(if (english) "About A SMS" else "درباره A SMS", if (english) listOf("Version 1.0.0" to false, "Developer: mamaD (kazeroon)" to false, "Email: pishi1403@gmail.com" to false) else listOf("نسخه 1.0.0" to false, "سازنده: mamaD (kazeroon)" to false, "ایمیل: pishi1403@gmail.com" to false), english) { showAbout = false }
     }
 }
 
@@ -211,7 +211,7 @@ private fun SettingRow(icon: androidx.compose.ui.graphics.vector.ImageVector, ti
 @Composable private fun DividerLine() { Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = .35f))) }
 
 @Composable
-private fun AlertLikeDialog(title: String, options: List<Pair<String, Boolean>>, onSelected: (String) -> Unit) {
+private fun AlertLikeDialog(title: String, options: List<Pair<String, Boolean>>, english: Boolean = false, onSelected: (String) -> Unit) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = { onSelected("") },
         title = { Text(title) },
