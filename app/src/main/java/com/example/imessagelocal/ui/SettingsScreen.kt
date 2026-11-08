@@ -38,6 +38,11 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -95,12 +100,23 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(14.dp))
-            SectionTitle("رنگ‌بندی")
+            SectionTitle("پالت رنگی")
             SettingsCard {
-                listOf(0 to "آبی", 1 to "بنفش", 2 to "فیروزه‌ای", 3 to "کهربایی", 4 to "صورتی").forEach { (theme, label) ->
-                    Row(Modifier.fillMaxWidth().clickable { vm.updateSettings(s.copy(accentTheme = theme)) }.padding(horizontal = 14.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
-                        RadioButton(selected = s.accentTheme == theme, onClick = { vm.updateSettings(s.copy(accentTheme = theme)) })
+                listOf(
+                    Triple(0, "اقیانوسی", Color(0xFF1769D2)),
+                    Triple(1, "یاسی", Color(0xFF7C3AED)),
+                    Triple(2, "زمردی", Color(0xFF0F9488)),
+                    Triple(3, "کهربایی", Color(0xFFB96A12)),
+                    Triple(4, "رز", Color(0xFFC13F78)),
+                ).forEach { (theme, label, swatch) ->
+                    Row(
+                        Modifier.fillMaxWidth().clickable { vm.updateSettings(s.copy(accentTheme = theme)) }.padding(horizontal = 16.dp, vertical = 11.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.size(34.dp).clip(RoundedCornerShape(12.dp)).background(swatch))
+                        Spacer(Modifier.width(12.dp))
+                        Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface, fontWeight = if (s.accentTheme == theme) FontWeight.Bold else FontWeight.Medium)
+                        if (s.accentTheme == theme) Icon(Icons.Default.CheckCircle, "انتخاب شده", tint = swatch)
                     }
                 }
             }
