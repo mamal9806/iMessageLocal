@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
                 2 -> true
                 else -> isSystemInDarkTheme()
             }
-            IMessageTheme(darkTheme = dark, fontScale = settings.fontScale, accentTheme = settings.accentTheme) {
+            IMessageTheme(darkTheme = dark, fontScale = settings.fontScale, accentTheme = settings.accentTheme, language = settings.language) {
                 AppRoot(vm)
             }
         }
