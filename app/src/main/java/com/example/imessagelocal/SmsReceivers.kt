@@ -19,6 +19,19 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+private fun detectLikelySpam(body: String): Boolean {
+    val text = body.lowercase()
+    val urlCount = Regex("https?://|www\\.").findAll(text).count()
+    val shortLink = listOf("bit.ly", "tinyurl.com", "t.co/", "cutt.ly", "is.gd").any { it in text }
+    val terms = listOf(
+        "برنده شدید", "جایزه", "واریز فوری", "سود تضمینی", "روی لینک کلیک", "وام فوری", "شارژ رایگان", "حساب شما مسدود",
+        "you won", "claim your prize", "free gift", "urgent payment", "verify your account", "account suspended", "click here", "limited offer", "cash prize"
+    )
+    val hits = terms.count { it in text }
+    val urgent = listOf("فوری", "همین الان", "urgent", "immediately", "act now").any { it in text }
+    return (shortLink && hits >= 1) || (urlCount > 0 && hits >= 2) || hits >= 3 || (urlCount > 0 && urgent && hits >= 1)
+}
+
 private fun lookupContactName(context: Context, phone: String): String? {
     if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) return null
     return try {
@@ -43,7 +56,10 @@ class SmsDeliverReceiver : BroadcastReceiver() {
                 if (address.isNotBlank() && body.isNotBlank()) {
                     val contactName = lookupContactName(context, address)
                     val repo = ChatRepository(AppDatabase.get(context).chatDao())
-                    val conversationId = repo.receiveSms(address, body, parts.first().timestampMillis, contactName)
+                    val settings = Prefs(context).load()
+                    val suspicious = detectLikelySpam(body)
+                    val autoMove = suspicious && settings.autoMoveSpam
+                    val conversationId = repo.receiveSms(address, body, parts.first().timestampMillis, contactName, markAsSpam = autoMove)
                     if (intent.action == Telephony.Sms.Intents.SMS_DELIVER_ACTION) {
                         val values = ContentValues().apply {
                             put(Telephony.Sms.ADDRESS, address)
@@ -56,9 +72,9 @@ class SmsDeliverReceiver : BroadcastReceiver() {
                         context.contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
                     }
                     val conversation = repo.getConversation(conversationId)
-                    val settings = Prefs(context).load()
                     if (conversation?.blocked != true && conversation?.spam != true && conversation?.trashed != true) {
-                        Notifier.notifyIncoming(context, conversation?.name ?: contactName ?: address, body, settings.sound, conversationId, settings.notificationSoundUri, address)
+                        val notificationText = if (suspicious) "⚠ پیام مشکوک: $body" else body
+                        Notifier.notifyIncoming(context, conversation?.name ?: contactName ?: address, notificationText, settings.sound, conversationId, settings.notificationSoundUri, address)
                     }
                 }
             } finally { pending.finish() }
