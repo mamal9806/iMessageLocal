@@ -24,8 +24,9 @@ val DividerBlue = Color(0xFF213052)
 val SuccessGreen = Color(0xFF28D17C)
 
 @Composable
-fun IMessageTheme(darkTheme: Boolean = isSystemInDarkTheme(), fontScale: Float = 1f, content: @Composable () -> Unit) {
-    val colors = if (darkTheme) darkColorScheme(
+fun IMessageTheme(darkTheme: Boolean = isSystemInDarkTheme(), fontScale: Float = 1f, accentTheme: Int = 0, content: @Composable () -> Unit) {
+    val accent = when (accentTheme) { 1 -> Color(0xFF8B5CF6); 2 -> Color(0xFF0D9488); 3 -> Color(0xFFE8793A); 4 -> Color(0xFFDB4F83); else -> IOSBlue }
+    val colors = (if (darkTheme) darkColorScheme(
         primary = IOSBlue, onPrimary = Color.White,
         background = Color(0xFF05070D), onBackground = Color(0xFFF4F6FC),
         surface = Color(0xFF111827), onSurface = Color(0xFFF4F6FC),
@@ -37,7 +38,7 @@ fun IMessageTheme(darkTheme: Boolean = isSystemInDarkTheme(), fontScale: Float =
         surface = Color.White, onSurface = Color(0xFF111827),
         surfaceVariant = Color(0xFFE8EDF5), onSurfaceVariant = Color(0xFF46546A),
         outline = Color(0xFFD2D9E4), error = Color(0xFFBA1A1A),
-    )
+    )).copy(primary = accent)
     val density = LocalDensity.current
     val baseTypography = Typography()
     val typography = baseTypography.copy(
