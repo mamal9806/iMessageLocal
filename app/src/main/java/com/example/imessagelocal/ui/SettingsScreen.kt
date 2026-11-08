@@ -150,6 +150,8 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 DividerLine()
                 SettingRow(Icons.Default.VolumeUp, if (english) "Notification sound" else "صدای نوتیفیکیشن", if (s.sound) (if (english) "On" else "صدای پیش‌فرض") else (if (english) "Off" else "خاموش")) { vm.updateSettings(s.copy(sound = !s.sound)) }
                 DividerLine()
+                SettingRow(Icons.Default.Lock, if (english) "Spam protection" else "محافظت در برابر اسپم", if (s.autoMoveSpam) (if (english) "Automatically move suspicious messages to Spam" else "انتقال خودکار پیام‌های مشکوک به پوشه اسپم") else (if (english) "Warn only; you decide" else "فقط هشدار؛ تصمیم با شماست")) { vm.updateSettings(vm.settings.copy(autoMoveSpam = !vm.settings.autoMoveSpam)) }
+                DividerLine()
                 SettingRow(Icons.Default.Phone, if (english) "Default SIM" else "سیم‌کارت پیش‌فرض", if (s.defaultSimSubscriptionId < 0) (if (english) "System default" else "پیش‌فرض سیستم") else (if (english) "Selected SIM" else "SIM انتخاب‌شده")) {
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) { simOptions = activeSims(context); showSim = true } else phoneLauncher.launch(Manifest.permission.READ_PHONE_STATE)
                 }
