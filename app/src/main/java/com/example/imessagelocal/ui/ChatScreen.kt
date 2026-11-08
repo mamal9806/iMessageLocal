@@ -83,6 +83,20 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     var showSimPicker by remember { mutableStateOf(false) }
     var showTemplates by remember { mutableStateOf(false) }
 
+    val openSchedulePicker = {
+        val initial = Calendar.getInstance().apply { add(Calendar.MINUTE, 5) }
+        DatePickerDialog(context, { _, year, month, day ->
+            val picked = (initial.clone() as Calendar).apply { set(Calendar.YEAR, year); set(Calendar.MONTH, month); set(Calendar.DAY_OF_MONTH, day) }
+            TimePickerDialog(context, { _, hour, minute ->
+                picked.set(Calendar.HOUR_OF_DAY, hour); picked.set(Calendar.MINUTE, minute); picked.set(Calendar.SECOND, 0)
+                if (picked.timeInMillis > System.currentTimeMillis()) { vm.scheduleSms(conversationId, draft, picked.timeInMillis); draft = "" }
+            }, initial.get(Calendar.HOUR_OF_DAY), initial.get(Calendar.MINUTE), true).show()
+        }, initial.get(Calendar.YEAR), initial.get(Calendar.MONTH), initial.get(Calendar.DAY_OF_MONTH)).show()
+    }
+    val schedulePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted && draft.isNotBlank()) openSchedulePicker()
+    }
+
     val simPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
             simOptions = activeSims(context)
@@ -190,20 +204,8 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
             IconButton(
                 onClick = {
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
-                        smsPermission.launch(Manifest.permission.SEND_SMS)
-                    } else {
-                        val initial = (Calendar.getInstance()).apply { add(Calendar.MINUTE, 5) }
-                        DatePickerDialog(context, { _, year, month, day ->
-                            val picked = (initial.clone() as Calendar).apply { set(Calendar.YEAR, year); set(Calendar.MONTH, month); set(Calendar.DAY_OF_MONTH, day) }
-                            TimePickerDialog(context, { _, hour, minute ->
-                                picked.set(Calendar.HOUR_OF_DAY, hour); picked.set(Calendar.MINUTE, minute); picked.set(Calendar.SECOND, 0)
-                                if (picked.timeInMillis > System.currentTimeMillis()) {
-                                    vm.scheduleSms(conversationId, draft, picked.timeInMillis)
-                                    draft = ""
-                                }
-                            }, initial.get(Calendar.HOUR_OF_DAY), initial.get(Calendar.MINUTE), true).show()
-                        }, initial.get(Calendar.YEAR), initial.get(Calendar.MONTH), initial.get(Calendar.DAY_OF_MONTH)).show()
-                    }
+                        schedulePermission.launch(Manifest.permission.SEND_SMS)
+                    } else openSchedulePicker()
                 },
                 enabled = draft.isNotBlank(),
                 modifier = Modifier.size(44.dp),
