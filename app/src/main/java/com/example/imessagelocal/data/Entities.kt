@@ -17,6 +17,10 @@ data class ConversationEntity(
     val updatedAt: Long = System.currentTimeMillis(),
     val simSubscriptionId: Int? = null,
     @ColumnInfo(defaultValue = "0") val archived: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val trashed: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val spam: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val blocked: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val unreadCount: Int = 0,
     @ColumnInfo(defaultValue = "1") val notificationsEnabled: Boolean = true,
     val contactUri: String? = null,
 )
