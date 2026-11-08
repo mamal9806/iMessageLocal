@@ -7,6 +7,21 @@ class ChatRepository(private val dao: ChatDao) {
     fun conversations(query: String) =
         if (query.isBlank()) dao.observeConversations() else dao.searchConversations(query.trim())
 
+    fun allConversations() = dao.observeAllConversations()
+
+    suspend fun moveConversationToFolder(id: Long, folder: String) {
+        dao.setConversationFolder(
+            id,
+            archived = folder == "archive",
+            trashed = folder == "trash",
+            spam = folder == "spam",
+            blocked = folder == "blocked",
+        )
+    }
+
+    suspend fun markAllRead() = dao.markAllConversationsRead()
+    suspend fun markRead(id: Long) = dao.markConversationRead(id)
+
     fun messages(conversationId: Long) = dao.observeMessages(conversationId)
 
     suspend fun createConversation(name: String, phoneNumber: String): Long {
@@ -45,9 +60,10 @@ class ChatRepository(private val dao: ChatDao) {
             conversation = conversation.copy(name = contactName)
             dao.updateConversation(conversation)
         }
+        if (conversation.blocked || conversation.spam || conversation.trashed) return conversation.id
         if (!dao.hasIncomingDuplicate(conversation.id, body, timestamp - 5000, timestamp + 5000)) {
             dao.insertMessage(MessageEntity(conversationId = conversation.id, text = body, isOutgoing = false, createdAt = timestamp, deliveryState = "RECEIVED"))
-            dao.updateConversation(conversation.copy(lastText = body, updatedAt = timestamp))
+            dao.updateConversation(conversation.copy(lastText = body, updatedAt = timestamp, unreadCount = conversation.unreadCount + 1))
         }
         return conversation.id
     }
@@ -60,6 +76,7 @@ class ChatRepository(private val dao: ChatDao) {
             it.phoneNumber.isNotBlank() && normalizeAddress(it.phoneNumber) == normalized
         }
         val conversationId = existing?.id ?: createConversation(contactName?.takeIf { it.isNotBlank() } ?: number, number)
+        if (existing?.let { it.blocked || it.spam || it.trashed } == true) return
         if (existing != null && !contactName.isNullOrBlank() && existing.name != contactName) {
             dao.updateConversation(existing.copy(name = contactName))
         }
