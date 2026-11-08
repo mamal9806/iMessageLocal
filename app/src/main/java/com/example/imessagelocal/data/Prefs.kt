@@ -3,7 +3,7 @@ package com.example.imessagelocal.data
 import android.content.Context
 
 data class Settings(
-    val darkMode: Int = 0,
+    val darkMode: Int = 2,
     val fontScale: Float = 1f,
     val sound: Boolean = true,
     val defaultSimSubscriptionId: Int = -1,
@@ -14,7 +14,7 @@ class Prefs(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
     fun load() = Settings(
-        darkMode = prefs.getInt("dark", 0),
+        darkMode = prefs.getInt("dark", 2),
         fontScale = prefs.getFloat("font", 1f),
         sound = prefs.getBoolean("sound", true),
         defaultSimSubscriptionId = prefs.getInt("default_sim", -1),

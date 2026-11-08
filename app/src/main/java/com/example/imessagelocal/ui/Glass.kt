@@ -10,28 +10,36 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+private val GlassEdge = Color(0xFFD6E9FF)
+private val GlassBlue = Color(0xFF4D9DFF)
+private val GlassPurple = Color(0xFF9A8BFF)
+
 fun Modifier.liquidGlass(): Modifier {
-    val shape = RoundedCornerShape(18.dp)
+    val shape = RoundedCornerShape(22.dp)
     return this
         .clip(shape)
         .background(
             Brush.linearGradient(
                 listOf(
-                    Color.White.copy(alpha = 0.20f),
-                    Color(0xFF9CCBFF).copy(alpha = 0.08f),
-                    Color.White.copy(alpha = 0.04f),
+                    Color(0xFF344761).copy(alpha = 0.76f),
+                    Color(0xFF17263B).copy(alpha = 0.94f),
+                    Color(0xFF25243F).copy(alpha = 0.88f),
                 ),
             ),
         )
         .border(
             1.dp,
             Brush.linearGradient(
-                listOf(Color.White.copy(alpha = 0.72f), Color(0xFF7EBBFF).copy(alpha = 0.34f), Color.White.copy(alpha = 0.18f)),
+                listOf(
+                    GlassEdge.copy(alpha = 0.76f),
+                    GlassBlue.copy(alpha = 0.56f),
+                    GlassPurple.copy(alpha = 0.42f),
+                    Color.White.copy(alpha = 0.14f),
+                ),
             ),
             shape,
         )
 }
-
 
 fun Modifier.liquidGlassCircle(): Modifier {
     return this
@@ -39,9 +47,9 @@ fun Modifier.liquidGlassCircle(): Modifier {
         .background(
             Brush.linearGradient(
                 listOf(
-                    Color.White.copy(alpha = 0.34f),
-                    Color(0xFF9CCBFF).copy(alpha = 0.16f),
-                    Color.White.copy(alpha = 0.07f),
+                    Color(0xFF405A78).copy(alpha = 0.96f),
+                    Color(0xFF1B304A).copy(alpha = 0.97f),
+                    Color(0xFF302D50).copy(alpha = 0.94f),
                 ),
             ),
         )
@@ -49,9 +57,9 @@ fun Modifier.liquidGlassCircle(): Modifier {
             1.dp,
             Brush.linearGradient(
                 listOf(
-                    Color.White.copy(alpha = 0.88f),
-                    Color(0xFF7EBBFF).copy(alpha = 0.52f),
-                    Color.White.copy(alpha = 0.30f),
+                    GlassEdge.copy(alpha = 0.92f),
+                    GlassBlue.copy(alpha = 0.68f),
+                    GlassPurple.copy(alpha = 0.48f),
                 ),
             ),
             CircleShape,

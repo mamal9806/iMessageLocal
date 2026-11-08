@@ -9,37 +9,45 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 
-val IOSBlue = Color(0xFF0A84FF)
-val IOSBackground = Color(0xFFFFFFFF)
-val IOSSearchFill = Color(0xFFF2F2F7)
+val IOSBlue = Color(0xFF69AFFF)
+val IOSBackground = Color(0xFF080D18)
+val IOSSearchFill = Color(0xFF172235)
+val GlassSurface = Color(0xFF111C2D)
+val GlassElevated = Color(0xFF1A2A40)
+val AccentViolet = Color(0xFF9A8BFF)
+val AccentMint = Color(0xFF62DCC8)
 
 @Composable
 fun IMessageTheme(darkTheme: Boolean, fontScale: Float, content: @Composable () -> Unit) {
     val colors = if (darkTheme) {
         darkColorScheme(
             primary = IOSBlue,
-            onPrimary = Color.White,
-            background = Color.Black,
-            onBackground = Color(0xFFF2F2F7),
-            surface = Color(0xFF1C1C1E),
-            onSurface = Color(0xFFF2F2F7),
-            surfaceVariant = Color(0xFF2C2C2E),
-            onSurfaceVariant = Color(0xFF8E8E93),
-            outline = Color(0xFF38383A),
-            error = Color(0xFFFF453A),
+            onPrimary = Color(0xFF071426),
+            secondary = AccentViolet,
+            onSecondary = Color(0xFF17132D),
+            tertiary = AccentMint,
+            background = IOSBackground,
+            onBackground = Color(0xFFF3F6FC),
+            surface = GlassSurface,
+            onSurface = Color(0xFFF3F6FC),
+            surfaceVariant = GlassElevated,
+            onSurfaceVariant = Color(0xFFABB9CC),
+            outline = Color(0xFF40536D),
+            error = Color(0xFFFF7185),
         )
     } else {
         lightColorScheme(
-            primary = IOSBlue,
+            primary = Color(0xFF176FE5),
             onPrimary = Color.White,
-            background = Color.White,
-            onBackground = Color.Black,
+            secondary = Color(0xFF6750A4),
+            background = Color(0xFFF3F6FB),
+            onBackground = Color(0xFF111827),
             surface = Color.White,
-            onSurface = Color.Black,
-            surfaceVariant = Color(0xFFE9E9EB),
-            onSurfaceVariant = Color(0xFF8E8E93),
-            outline = Color(0xFFC6C6C8),
-            error = Color(0xFFFF3B30),
+            onSurface = Color(0xFF111827),
+            surfaceVariant = Color(0xFFE8EEF7),
+            onSurfaceVariant = Color(0xFF596579),
+            outline = Color(0xFFD2DCEB),
+            error = Color(0xFFBA1A1A),
         )
     }
     val density = LocalDensity.current

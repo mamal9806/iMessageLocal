@@ -103,7 +103,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 title = {
                     Column {
                         Text(title, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
-                        Text("SMS", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("پیامک", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 navigationIcon = { TextButton(onClick = onBack) { Text("‹", color = IOSBlue, style = MaterialTheme.typography.headlineLarge) } },
@@ -134,7 +134,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
-                        TextButton(modifier = Modifier.liquidGlass(), onClick = { replyTo = null }) { Text("Cancel") }
+                        TextButton(modifier = Modifier.liquidGlass(), onClick = { replyTo = null }) { Text("لغو") }
                     }
                 }
                 Row(
@@ -159,7 +159,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                         value = draft,
                         onValueChange = { draft = it },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Text Message · SMS") },
+                        placeholder = { Text("پیام خود را بنویسید…") },
                         shape = RoundedCornerShape(24.dp),
                         maxLines = 5,
                     )
@@ -185,7 +185,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     ) { padding ->
         if (messages.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("No messages yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("هنوز پیامی ردوبدل نشده", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(
@@ -253,14 +253,14 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                             onDismissRequest = { menuFor = null },
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Reply") },
+                                text = { Text("پاسخ دادن") },
                                 onClick = {
                                     replyTo = m
                                     menuFor = null
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Copy") },
+                                text = { Text("کپی متن") },
                                 onClick = {
                                     clipboard.setText(AnnotatedString(m.text))
                                     menuFor = null
@@ -268,7 +268,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                             )
                             if (mine) {
                                 DropdownMenuItem(
-                                    text = { Text("Edit") },
+                                    text = { Text("ویرایش") },
                                     onClick = {
                                         editing = m
                                         editText = m.text
@@ -277,7 +277,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                                 )
                             }
                             DropdownMenuItem(
-                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                text = { Text("حذف", color = MaterialTheme.colorScheme.error) },
                                 onClick = {
                                     vm.deleteMessage(m)
                                     menuFor = null
@@ -293,24 +293,24 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     if (showSimPicker) {
         AlertDialog(
             onDismissRequest = { showSimPicker = false },
-            title = { Text("Choose SIM") },
+            title = { Text("انتخاب سیم‌کارت") },
             text = { Column {
-                if (simOptions.isEmpty()) Text("No active SIM was found. The system default SIM will be used.")
+                if (simOptions.isEmpty()) Text("سیم‌کارت فعالی پیدا نشد؛ از پیش‌فرض سیستم استفاده می‌شود.")
                 simOptions.forEachIndexed { index, info ->
                     TextButton(modifier = Modifier.liquidGlass(), onClick = { vm.setConversationSim(conversationId, info.subscriptionId); showSimPicker = false }) {
                         Text("SIM ${index + 1} · ${info.carrierName}")
                     }
                 }
-                TextButton(modifier = Modifier.liquidGlass(), onClick = { vm.setConversationSim(conversationId, null); showSimPicker = false }) { Text("Use system default") }
+                TextButton(modifier = Modifier.liquidGlass(), onClick = { vm.setConversationSim(conversationId, null); showSimPicker = false }) { Text("استفاده از پیش‌فرض سیستم") }
             } },
-            confirmButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { showSimPicker = false }) { Text("Close") } },
+            confirmButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { showSimPicker = false }) { Text("بستن") } },
         )
     }
 
     editing?.let { m ->
         AlertDialog(
             onDismissRequest = { editing = null },
-            title = { Text("Edit message") },
+            title = { Text("ویرایش پیام") },
             text = {
                 OutlinedTextField(
                     value = editText,
@@ -322,9 +322,9 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 TextButton(modifier = Modifier.liquidGlass(), onClick = {
                     vm.editMessage(m, editText)
                     editing = null
-                }) { Text("Save") }
+                }) { Text("ذخیره") }
             },
-            dismissButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { editing = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(modifier = Modifier.liquidGlass(), onClick = { editing = null }) { Text("لغو") } },
         )
     }
 }
