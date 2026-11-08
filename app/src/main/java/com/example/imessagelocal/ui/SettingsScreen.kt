@@ -74,6 +74,7 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
     var simOptions by remember { mutableStateOf<List<SubscriptionInfo>>(emptyList()) }
         var showAbout by remember { mutableStateOf(false) }
     var showSim by remember { mutableStateOf(false) }
+    var selectedFolder by remember { mutableStateOf<String?>(null) }
     val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val contactsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val phoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if (granted) showSim = true }
@@ -83,6 +84,11 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
             val picked = if (Build.VERSION.SDK_INT >= 33) result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, android.net.Uri::class.java) else @Suppress("DEPRECATION") result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
             vm.updateSettings(vm.settings.copy(notificationSoundUri = picked?.toString()))
         }
+    }
+
+    if (selectedFolder != null) {
+        ConversationFoldersScreen(vm, selectedFolder!!, onBack = { selectedFolder = null }, onOpen = { vm.open(it) })
+        return
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -147,6 +153,19 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 SettingRow(Icons.Default.Phone, if (english) "Default SIM" else "سیم‌کارت پیش‌فرض", if (s.defaultSimSubscriptionId < 0) (if (english) "System default" else "پیش‌فرض سیستم") else (if (english) "Selected SIM" else "SIM انتخاب‌شده")) {
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) { simOptions = activeSims(context); showSim = true } else phoneLauncher.launch(Manifest.permission.READ_PHONE_STATE)
                 }
+            }
+            Spacer(Modifier.height(18.dp))
+            SectionTitle(if (english) "Conversation folders" else "پوشه‌های گفتگو")
+            SettingsCard {
+                SettingRow(Icons.Default.Folder, if (english) "Archive" else "آرشیو", if (english) "Keep chats out of the inbox" else "گفتگوهای بایگانی‌شده") { selectedFolder = "archive" }
+                DividerLine()
+                SettingRow(Icons.Default.Folder, if (english) "Trash" else "سطل زباله", if (english) "Deleted conversations" else "گفتگوهای حذف‌شده") { selectedFolder = "trash" }
+                DividerLine()
+                SettingRow(Icons.Default.Folder, if (english) "Spam" else "اسپم", if (english) "Unwanted messages" else "پیام‌های ناخواسته") { selectedFolder = "spam" }
+                DividerLine()
+                SettingRow(Icons.Default.Lock, if (english) "Blocked" else "مسدودشده‌ها", if (english) "Blocked conversations and numbers" else "شماره‌ها و گفتگوهای مسدودشده") { selectedFolder = "blocked" }
+                DividerLine()
+                SettingRow(Icons.Default.CheckCircle, if (english) "Mark all as read" else "انتخاب همه به‌عنوان خوانده‌شده", if (english) "Clear unread indicators in all chats" else "حذف نشانگر خوانده‌نشده از همه گفتگوها") { vm.markAllConversationsRead() }
             }
             Spacer(Modifier.height(14.dp))
             SectionTitle(if (english) "About" else "اطلاعات بیشتر")
