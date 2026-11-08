@@ -39,6 +39,9 @@ interface ChatDao {
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY createdAt ASC, id ASC")
     fun observeMessages(conversationId: Long): Flow<List<MessageEntity>>
 
+    @Query("SELECT EXISTS(SELECT 1 FROM messages WHERE conversationId=:conversationId AND text=:text AND isOutgoing=:isOutgoing AND createdAt=:timestamp)")
+    suspend fun hasImportedDuplicate(conversationId: Long, text: String, isOutgoing: Boolean, timestamp: Long): Boolean
+
     @Query("SELECT EXISTS(SELECT 1 FROM messages WHERE conversationId=:conversationId AND text=:text AND isOutgoing=0 AND createdAt BETWEEN :from AND :to)")
     suspend fun hasIncomingDuplicate(conversationId: Long, text: String, from: Long, to: Long): Boolean
 
