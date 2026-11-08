@@ -90,7 +90,10 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
         }
     }
 
-    LaunchedEffect(messages.size) { if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex) }
+    LaunchedEffect(messages.size) {
+        vm.markConversationRead(conversationId)
+        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
+    }
 
     Column(Modifier.fillMaxSize().navigationBarsPadding()) {
         Row(
