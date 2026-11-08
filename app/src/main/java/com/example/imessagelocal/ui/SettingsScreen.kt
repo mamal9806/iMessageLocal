@@ -147,26 +147,9 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(14.dp))
-            SectionTitle("حریم خصوصی")
-            SettingsCard {
-                SettingRow(Icons.Default.Lock, "دسترسی‌ها و مجوزها", "مجوزهای موردنیاز پیامک") {
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) contactsLauncher.launch(Manifest.permission.READ_CONTACTS)
-                    else if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-                DividerLine()
-                SettingRow(Icons.Default.Notifications, "اعلان‌ها", if (s.sound) "فعال" else "بی‌صدا") { if (Build.VERSION.SDK_INT >= 33) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
-            }
-            Spacer(Modifier.height(14.dp))
             SectionTitle("اطلاعات بیشتر")
             SettingsCard {
                 SettingRow(Icons.Default.Info, "درباره برنامه", "A SMS · نسخه 1.0.0") { showAbout = true }
-                DividerLine()
-                SettingRow(Icons.Default.Public, "برنامه پیش‌فرض پیامک", "برای دریافت پیامک واقعی") {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        val role = context.getSystemService(RoleManager::class.java)
-                        if (role.isRoleAvailable(RoleManager.ROLE_SMS) && !role.isRoleHeld(RoleManager.ROLE_SMS)) roleLauncher.launch(role.createRequestRoleIntent(RoleManager.ROLE_SMS))
-                    } else roleLauncher.launch(Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT).putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, context.packageName))
-                }
             }
             Spacer(Modifier.height(20.dp))
             Text("A SMS\nFast · Beautiful · Secure", color = TextSecondary, modifier = Modifier.align(Alignment.CenterHorizontally))
