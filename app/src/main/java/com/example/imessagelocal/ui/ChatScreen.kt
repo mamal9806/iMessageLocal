@@ -65,6 +65,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -91,6 +97,10 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     var editing by remember { mutableStateOf<MessageEntity?>(null) }
     var editText by remember { mutableStateOf("") }
     var simOptions by remember { mutableStateOf<List<SubscriptionInfo>>(emptyList()) }
+    val conversations by vm.allConversations.collectAsStateWithLifecycle()
+    val currentConversation = conversations.firstOrNull { it.id == conversationId }
+    val selectedSubId = currentConversation?.simSubscriptionId?.takeIf { it >= 0 } ?: vm.settings.defaultSimSubscriptionId.takeIf { it >= 0 }
+    val selectedSimLabel = selectedSubId?.let { id -> simOptions.indexOfFirst { it.subscriptionId == id }.takeIf { it >= 0 }?.let { if (english) "SIM ${it + 1}" else "سیم ${it + 1}" } } ?: if (selectedSubId == null) (if (english) "Auto SIM" else "سیم خودکار") else (if (english) "Selected SIM" else "سیم انتخاب‌شده")
     var showSimPicker by remember { mutableStateOf(false) }
     var showTemplates by remember { mutableStateOf(false) }
     var showStickerPicker by remember { mutableStateOf(false) }
@@ -123,6 +133,9 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) simOptions = activeSims(context)
+    }
     LaunchedEffect(messages.size) { if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex) }
 
     Column(Modifier.fillMaxSize().navigationBarsPadding()) {
@@ -255,7 +268,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                         },
                         modifier = Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface),
                     ) { Icon(Icons.Default.Smartphone, if (english) "Choose SIM" else "انتخاب سیم‌کارت", tint = IOSBlue) }
-                    Text("SIM", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
+                    Text(selectedSimLabel, color = if (selectedSubId == null) TextSecondary else IOSBlue, style = MaterialTheme.typography.labelSmall, maxLines = 1)
                 }
                 Spacer(Modifier.width(4.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -295,8 +308,14 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     modifier = Modifier.height(190.dp),
                 ) {
                     items(stickers.size) { index ->
+                        val stickerTransition = rememberInfiniteTransition(label = "sticker_picker")
+                        val stickerPulse by stickerTransition.animateFloat(
+                            initialValue = 0.92f, targetValue = 1.10f,
+                            animationSpec = infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Reverse),
+                            label = "sticker_picker_pulse"
+                        )
                         TextButton(onClick = { draft = stickers[index]; showStickerPicker = false }) {
-                            Text(stickers[index], fontSize = 30.sp)
+                            Text(stickers[index], fontSize = 30.sp, modifier = Modifier.graphicsLayer { scaleX = stickerPulse; scaleY = stickerPulse })
                         }
                     }
                 }
@@ -392,17 +411,21 @@ private fun MessageBubble(m: MessageEntity, english: Boolean, onLongPress: () ->
             var stickerVisible by remember(m.id) { mutableStateOf(false) }
             LaunchedEffect(m.id) { stickerVisible = true }
             val stickerScale by androidx.compose.animation.core.animateFloatAsState(
-                targetValue = if (stickerVisible) 1f else 0.45f,
-                animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.52f, stiffness = 360f),
+                targetValue = if (stickerVisible) 1f else 0.35f,
+                animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.42f, stiffness = 260f),
                 label = "sticker_pop",
             )
+            val stickerMotion = rememberInfiniteTransition(label = "sticker_motion")
+            val stickerPulse by stickerMotion.animateFloat(initialValue = 0.97f, targetValue = 1.045f, animationSpec = infiniteRepeatable(tween(850, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Reverse), label = "sticker_breathe")
+            val stickerTilt by stickerMotion.animateFloat(initialValue = -3f, targetValue = 3f, animationSpec = infiniteRepeatable(tween(1100, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Reverse), label = "sticker_tilt")
             Box(
                 Modifier
                     .graphicsLayer {
                         if (isSticker) {
-                            scaleX = stickerScale
-                            scaleY = stickerScale
-                            rotationZ = (1f - stickerScale) * -12f
+                            scaleX = stickerScale * stickerPulse
+                            scaleY = stickerScale * stickerPulse
+                            rotationZ = stickerTilt * stickerScale
+                            translationY = if (stickerVisible) -2f else 16f
                         }
                     }
                     .clip(if (isSticker) RoundedCornerShape(18.dp) else shape)
@@ -414,7 +437,7 @@ private fun MessageBubble(m: MessageEntity, english: Boolean, onLongPress: () ->
                     )
                     .padding(horizontal = 16.dp, vertical = 11.dp),
             ) {
-                Text(m.text, color = MaterialTheme.colorScheme.onSurface, style = if (isSticker) MaterialTheme.typography.displaySmall.copy(fontSize = 48.sp) else MaterialTheme.typography.bodyLarge)
+                Text(m.text, color = MaterialTheme.colorScheme.onSurface, style = if (isSticker) MaterialTheme.typography.displaySmall.copy(fontSize = 58.sp) else MaterialTheme.typography.bodyLarge)
             }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)) {
                 if (m.pinned) Icon(Icons.Default.PushPin, null, tint = accent, modifier = Modifier.size(12.dp))
