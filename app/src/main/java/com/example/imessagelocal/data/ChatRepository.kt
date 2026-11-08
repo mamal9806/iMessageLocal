@@ -103,6 +103,8 @@ class ChatRepository(private val dao: ChatDao) {
 
     suspend fun deleteMessage(message: MessageEntity) = dao.deleteMessage(message.id)
 
+    suspend fun toggleMessagePin(message: MessageEntity) = dao.setMessagePinned(message.id, !message.pinned)
+
     suspend fun togglePin(conversation: ConversationEntity) =
         dao.updateConversation(conversation.copy(pinned = !conversation.pinned))
 
