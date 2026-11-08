@@ -183,7 +183,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     }
                 }
                 items(messages, key = { it.id }) { m ->
-                    MessageBubble(m, onLongPress = { menuFor = m })
+                    MessageBubble(m, english, onLongPress = { menuFor = m })
                 }
             }
         }
@@ -372,7 +372,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun MessageBubble(m: MessageEntity, onLongPress: () -> Unit) {
+private fun MessageBubble(m: MessageEntity, english: Boolean, onLongPress: () -> Unit) {
     // The selected accent colors the bubble surface and its outline, never the message text.
     val shape = if (m.isOutgoing) {
         RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomStart = 7.dp, bottomEnd = 22.dp)
@@ -418,7 +418,7 @@ private fun MessageBubble(m: MessageEntity, onLongPress: () -> Unit) {
                 if (m.pinned) Icon(Icons.Default.PushPin, null, tint = accent, modifier = Modifier.size(12.dp))
                 Text(formatTime(m.createdAt), color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                 if (m.isOutgoing) Text("  ${deliveryLabel(m.deliveryState, english)}", color = if (m.deliveryState == "DELIVERED") SuccessGreen else TextSecondary, style = MaterialTheme.typography.labelSmall)
-                if (m.edited) Text(" · ویرایش‌شده", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
+                if (m.edited) Text(if (english) " · edited" else " · ویرایش‌شده", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
             }
         }
     }
