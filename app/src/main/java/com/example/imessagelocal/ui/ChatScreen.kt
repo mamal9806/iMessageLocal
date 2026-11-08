@@ -98,14 +98,19 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(title) },
-                navigationIcon = { TextButton(modifier = Modifier.liquidGlass(), onClick = onBack) { Text("‹  Back") } },
-                actions = { TextButton(modifier = Modifier.liquidGlass(), onClick = {
+                title = {
+                    Column {
+                        Text(title, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                        Text("SMS", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                navigationIcon = { TextButton(onClick = onBack) { Text("‹", color = IOSBlue, style = MaterialTheme.typography.headlineLarge) } },
+                actions = { TextButton(onClick = {
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
                         simOptions = try { context.getSystemService(SubscriptionManager::class.java).activeSubscriptionInfoList.orEmpty() } catch (_: SecurityException) { emptyList() }
                         showSimPicker = true
                     } else simPermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
-                }) { Text("SIM") } },
+                }) { Text("SIM", color = IOSBlue) } },
             )
         },
         bottomBar = {
@@ -136,15 +141,18 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                     }
                 }
                 Row(
-                    Modifier.fillMaxWidth().padding(8.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     OutlinedTextField(
                         value = draft,
                         onValueChange = { draft = it },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("iMessage") },
-                        shape = RoundedCornerShape(20.dp),
+                        placeholder = { Text("Text Message · SMS") },
+                        shape = RoundedCornerShape(24.dp),
                         maxLines = 5,
                     )
                     Spacer(Modifier.width(8.dp))
@@ -161,7 +169,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                                 permissionLauncher.launch(Manifest.permission.SEND_SMS)
                             }
                         },
-                    ) { Text("↑") }
+                    ) { Text("↑", style = MaterialTheme.typography.titleLarge) }
                 }
             }
         },

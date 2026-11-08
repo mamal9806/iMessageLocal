@@ -77,13 +77,24 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Messages", fontWeight = FontWeight.Bold) },
-                navigationIcon = { TextButton(modifier = Modifier.liquidGlass(), onClick = onSettings) { Text("Settings") } },
+                title = {
+                    Text(
+                        "Messages",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
+                },
                 actions = {
-                    TextButton(modifier = Modifier.liquidGlass(), onClick = { contactPicker.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)) }) { Text("Contacts") }
-                    TextButton(modifier = Modifier.liquidGlass(), onClick = { newName = ""; newPhone = ""; showNew = true }) { Text("New") }
+                    TextButton(onClick = onSettings) { Text("⚙", color = IOSBlue, style = MaterialTheme.typography.titleLarge) }
+                    TextButton(
+                        onClick = { contactPicker.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)) },
+                    ) { Text("Contacts", color = IOSBlue) }
+                    TextButton(
+                        onClick = { newName = ""; newPhone = ""; showNew = true },
+                    ) { Text("✎", color = IOSBlue, style = MaterialTheme.typography.titleLarge) }
                 },
             )
         },
@@ -95,10 +106,15 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                     query = it
                     vm.setQuery(it)
                 },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)),
-                placeholder = { Text("Search") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(if (MaterialTheme.colorScheme.background == Color.White) Color(0xFFF2F2F7) else MaterialTheme.colorScheme.surfaceVariant)
+                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(14.dp)),
+                placeholder = { Text("⌕  Search") },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
             )
 
             if (conversations.isEmpty()) {
@@ -121,11 +137,11 @@ fun ConversationListScreen(vm: AppViewModel, onOpen: (Long) -> Unit, onSettings:
                                         onClick = { onOpen(c.id) },
                                         onLongClick = { menuFor = c },
                                     )
-                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                    .padding(horizontal = 16.dp, vertical = 11.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Box(
-                                    Modifier.size(52.dp).clip(CircleShape).background(Color(c.avatarColor)),
+                                    Modifier.size(54.dp).clip(CircleShape).background(Color(c.avatarColor)),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Text(

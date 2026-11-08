@@ -10,6 +10,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 
 val IOSBlue = Color(0xFF0A84FF)
+val IOSBackground = Color(0xFFFFFFFF)
+val IOSSearchFill = Color(0xFFF2F2F7)
 
 @Composable
 fun IMessageTheme(darkTheme: Boolean, fontScale: Float, content: @Composable () -> Unit) {
