@@ -157,9 +157,9 @@ private fun SearchField(value: String, onValueChange: (String) -> Unit) {
         singleLine = true,
         shape = RoundedCornerShape(18.dp),
         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-            unfocusedContainerColor = Color.White.copy(alpha = .06f),
-            focusedContainerColor = Color.White.copy(alpha = .08f),
-            unfocusedBorderColor = Color.White.copy(alpha = .08f),
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = .45f),
             focusedBorderColor = IOSBlue.copy(alpha = .7f),
         ),
     )
@@ -190,7 +190,7 @@ private fun ConversationRow(c: ConversationEntity, onClick: () -> Unit, onLongCl
 fun BottomNav(selected: RootTab, onSelect: (RootTab) -> Unit) {
     // Kept separate so the visual shell can be shared by the three real destinations.
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp).clip(RoundedCornerShape(26.dp)).background(Color(0xCC0D1730)).border(1.dp, Color.White.copy(alpha = .08f)).padding(6.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp).clip(RoundedCornerShape(26.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = .96f)).border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = .35f)).padding(6.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
         val items = listOf(
