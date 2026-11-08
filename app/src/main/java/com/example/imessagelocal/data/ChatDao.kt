@@ -74,4 +74,7 @@ interface ChatDao {
 
     @Query("UPDATE scheduled_sms SET status = :status WHERE id = :id")
     suspend fun updateScheduledStatus(id: Long, status: String)
+
+    @Query("DELETE FROM scheduled_sms WHERE conversationId = :conversationId")
+    suspend fun deleteScheduledForConversation(conversationId: Long)
 }
