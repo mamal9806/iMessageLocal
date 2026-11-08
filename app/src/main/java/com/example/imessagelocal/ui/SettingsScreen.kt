@@ -11,6 +11,7 @@ import android.telephony.SubscriptionInfo
 import android.telephony.SubscriptionManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,6 +39,11 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,10 +69,12 @@ import com.example.imessagelocal.data.Settings
 @Composable
 fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
     val s = vm.settings
+    val english = s.language == 1
     val context = LocalContext.current
     var simOptions by remember { mutableStateOf<List<SubscriptionInfo>>(emptyList()) }
         var showAbout by remember { mutableStateOf(false) }
     var showSim by remember { mutableStateOf(false) }
+    var selectedFolder by remember { mutableStateOf<String?>(null) }
     val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val contactsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val phoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if (granted) showSim = true }
@@ -78,16 +86,21 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
         }
     }
 
+    if (selectedFolder != null) {
+        ConversationFoldersScreen(vm, selectedFolder!!, onBack = { selectedFolder = null }, onOpen = { vm.open(it) })
+        return
+    }
+
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 20.dp, top = 18.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "بازگشت", tint = TextPrimary) }
-            Text("تنظیمات", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text(if (english) "Settings" else "تنظیمات", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp)) {
-            SettingsHero()
-            SectionTitle("ظاهر برنامه")
+            SettingsHero(english)
+            SectionTitle(if (english) "Appearance" else "ظاهر برنامه")
             SettingsCard {
-                listOf(0 to "پیروی از سیستم", 1 to "روشن", 2 to "تاریک").forEach { (mode, label) ->
+                (if (english) listOf(0 to "System default", 1 to "Light", 2 to "Dark") else listOf(0 to "پیروی از سیستم", 1 to "روشن", 2 to "تاریک")).forEach { (mode, label) ->
                     Row(Modifier.fillMaxWidth().clickable { vm.updateSettings(s.copy(darkMode = mode)) }.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
                         RadioButton(selected = s.darkMode == mode, onClick = { vm.updateSettings(s.copy(darkMode = mode)) })
@@ -95,68 +108,101 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(14.dp))
-            Spacer(Modifier.height(18.dp))
-            SectionTitle("عمومی")
+            SectionTitle(if (english) "Color palette" else "پالت رنگی")
             SettingsCard {
-                SettingRow(Icons.Default.Language, "زبان برنامه", "فارسی", null)
+                listOf(
+                    Triple(0, if (english) "Ocean" else "اقیانوسی", Color(0xFF1769D2)),
+                    Triple(1, if (english) "Lavender" else "یاسی", Color(0xFF7C3AED)),
+                    Triple(2, if (english) "Emerald" else "زمردی", Color(0xFF0F9488)),
+                    Triple(3, if (english) "Amber" else "کهربایی", Color(0xFFB96A12)),
+                    Triple(4, if (english) "Rose" else "رز", Color(0xFFC13F78)),
+                ).forEach { (theme, label, swatch) ->
+                    Row(
+                        Modifier.fillMaxWidth().clickable { vm.updateSettings(s.copy(accentTheme = theme)) }.padding(horizontal = 16.dp, vertical = 11.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.size(34.dp).clip(RoundedCornerShape(12.dp)).background(swatch))
+                        Spacer(Modifier.width(12.dp))
+                        Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface, fontWeight = if (s.accentTheme == theme) FontWeight.Bold else FontWeight.Medium)
+                        if (s.accentTheme == theme) Icon(Icons.Default.CheckCircle, "انتخاب شده", tint = swatch)
+                    }
+                }
+            }
+            Spacer(Modifier.height(18.dp))
+            SectionTitle(if (english) "General" else "عمومی")
+            SettingsCard {
+                Row(
+                    Modifier.fillMaxWidth().clickable { vm.updateSettings(vm.settings.copy(language = if (vm.settings.language == 0) 1 else 0)) }.padding(horizontal = 14.dp, vertical = 15.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Language, null, tint = IOSBlue, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(if (s.language == 1) "App language" else "زبان برنامه", fontWeight = FontWeight.Medium)
+                        Text(if (s.language == 1) "English" else "فارسی", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                    }
+                    TextButton(onClick = { vm.updateSettings(s.copy(language = if (s.language == 0) 1 else 0)) }) {
+                        Text(if (s.language == 1) "فارسی" else "English", color = IOSBlue)
+                    }
+                }
                 DividerLine()
-                SettingRow(Icons.Default.VolumeUp, "صدای نوتیفیکیشن", if (s.sound) "صدای پیش‌فرض" else "خاموش") { vm.updateSettings(s.copy(sound = !s.sound)) }
+                SettingRow(Icons.Default.VolumeUp, if (english) "Notification sound" else "صدای نوتیفیکیشن", if (s.sound) (if (english) "On" else "صدای پیش‌فرض") else (if (english) "Off" else "خاموش")) { vm.updateSettings(s.copy(sound = !s.sound)) }
                 DividerLine()
-                SettingRow(Icons.Default.Phone, "سیم‌کارت پیش‌فرض", if (s.defaultSimSubscriptionId < 0) "پیش‌فرض سیستم" else "SIM انتخاب‌شده") {
+                SettingRow(Icons.Default.Lock, if (english) "Spam protection" else "محافظت در برابر اسپم", if (s.autoMoveSpam) (if (english) "Automatically move suspicious messages to Spam" else "انتقال خودکار پیام‌های مشکوک به پوشه اسپم") else (if (english) "Warn only; you decide" else "فقط هشدار؛ تصمیم با شماست")) { vm.updateSettings(vm.settings.copy(autoMoveSpam = !vm.settings.autoMoveSpam)) }
+                DividerLine()
+                SettingRow(Icons.Default.Phone, if (english) "Default SIM" else "سیم‌کارت پیش‌فرض", if (s.defaultSimSubscriptionId < 0) (if (english) "System default" else "پیش‌فرض سیستم") else (if (english) "Selected SIM" else "SIM انتخاب‌شده")) {
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) { simOptions = activeSims(context); showSim = true } else phoneLauncher.launch(Manifest.permission.READ_PHONE_STATE)
                 }
             }
-            Spacer(Modifier.height(14.dp))
-            SectionTitle("حریم خصوصی")
+            Spacer(Modifier.height(18.dp))
+            SectionTitle(if (english) "Conversation folders" else "پوشه‌های گفتگو")
             SettingsCard {
-                SettingRow(Icons.Default.Lock, "دسترسی‌ها و مجوزها", "مجوزهای موردنیاز پیامک") {
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) contactsLauncher.launch(Manifest.permission.READ_CONTACTS)
-                    else if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
+                SettingRow(Icons.Default.Folder, if (english) "Archive" else "آرشیو", if (english) "Keep chats out of the inbox" else "گفتگوهای بایگانی‌شده") { selectedFolder = "archive" }
                 DividerLine()
-                SettingRow(Icons.Default.Notifications, "اعلان‌ها", if (s.sound) "فعال" else "بی‌صدا") { if (Build.VERSION.SDK_INT >= 33) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
+                SettingRow(Icons.Default.Folder, if (english) "Trash" else "سطل زباله", if (english) "Deleted conversations" else "گفتگوهای حذف‌شده") { selectedFolder = "trash" }
+                DividerLine()
+                SettingRow(Icons.Default.Folder, if (english) "Spam" else "اسپم", if (english) "Unwanted messages" else "پیام‌های ناخواسته") { selectedFolder = "spam" }
+                DividerLine()
+                SettingRow(Icons.Default.Lock, if (english) "Blocked" else "مسدودشده‌ها", if (english) "Blocked conversations and numbers" else "شماره‌ها و گفتگوهای مسدودشده") { selectedFolder = "blocked" }
+                DividerLine()
+                SettingRow(Icons.Default.CheckCircle, if (english) "Mark all as read" else "انتخاب همه به‌عنوان خوانده‌شده", if (english) "Clear unread indicators in all chats" else "حذف نشانگر خوانده‌نشده از همه گفتگوها") { vm.markAllConversationsRead() }
             }
             Spacer(Modifier.height(14.dp))
-            SectionTitle("اطلاعات بیشتر")
+            SectionTitle(if (english) "About" else "اطلاعات بیشتر")
             SettingsCard {
-                SettingRow(Icons.Default.Info, "درباره برنامه", "A SMS · نسخه 1.0.0") { showAbout = true }
-                DividerLine()
-                SettingRow(Icons.Default.Public, "برنامه پیش‌فرض پیامک", "برای دریافت پیامک واقعی") {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        val role = context.getSystemService(RoleManager::class.java)
-                        if (role.isRoleAvailable(RoleManager.ROLE_SMS) && !role.isRoleHeld(RoleManager.ROLE_SMS)) roleLauncher.launch(role.createRequestRoleIntent(RoleManager.ROLE_SMS))
-                    } else roleLauncher.launch(Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT).putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, context.packageName))
-                }
+                SettingRow(Icons.Default.Info, if (english) "About the app" else "درباره برنامه", "A SMS · 1.0.0") { showAbout = true }
             }
             Spacer(Modifier.height(20.dp))
-            Text("A SMS\nFast · Beautiful · Secure", color = TextSecondary, modifier = Modifier.align(Alignment.CenterHorizontally))
+            Text(if (english) "A SMS\nFast · Beautiful · Secure" else "A SMS\nسریع · زیبا · امن", color = TextSecondary, modifier = Modifier.align(Alignment.CenterHorizontally))
             Spacer(Modifier.height(20.dp))
         }
     }
 
     if (showSim) {
-        AlertLikeDialog("انتخاب سیم‌کارت", buildList {
-            add("پیش‌فرض سیستم" to false)
-            simOptions.forEachIndexed { i, info -> add("SIM ${i + 1} · ${info.carrierName ?: "اپراتور"}" to (s.defaultSimSubscriptionId == info.subscriptionId)) }
-        }) { selected ->
-            if (selected == "پیش‌فرض سیستم") vm.updateSettings(s.copy(defaultSimSubscriptionId = -1))
-            else simOptions.firstOrNull { "SIM ${simOptions.indexOf(it) + 1} · ${it.carrierName ?: "اپراتور"}" == selected }?.let { vm.updateSettings(s.copy(defaultSimSubscriptionId = it.subscriptionId)) }
+        AlertLikeDialog(if (english) "Choose SIM" else "انتخاب سیم‌کارت", buildList {
+            add((if (english) "System default" else "پیش‌فرض سیستم") to false)
+            simOptions.forEachIndexed { i, info -> add("SIM ${i + 1} · ${info.carrierName ?: "Carrier"}" to (s.defaultSimSubscriptionId == info.subscriptionId)) }
+        }, english) { selected ->
+            if (selected == (if (english) "System default" else "پیش‌فرض سیستم")) vm.updateSettings(s.copy(defaultSimSubscriptionId = -1))
+            else simOptions.firstOrNull { "SIM ${simOptions.indexOf(it) + 1} · ${it.carrierName ?: if (english) "Carrier" else "اپراتور"}" == selected }?.let { vm.updateSettings(s.copy(defaultSimSubscriptionId = it.subscriptionId)) }
             showSim = false
         }
     }
     if (showAbout) {
-        AlertLikeDialog("درباره A SMS", listOf("نسخه 1.0.0" to false, "سازنده: mamaD (kazeroon)" to false, "ایمیل: pishi1403@gmail.com" to false)) { showAbout = false }
+        AlertLikeDialog(if (english) "About A SMS" else "درباره A SMS", if (english) listOf("Version 1.0.0" to false, "Developer: mamaD (kazeroon)" to false, "Email: pishi1403@gmail.com" to false) else listOf("نسخه 1.0.0" to false, "سازنده: mamaD (kazeroon)" to false, "ایمیل: pishi1403@gmail.com" to false), english) { showAbout = false }
     }
 }
 
 @Composable
-private fun SettingsHero() {
+private fun SettingsHero(english: Boolean) {
     Row(Modifier.fillMaxWidth().liquidGlass().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(62.dp).clip(RoundedCornerShape(18.dp)).background(BrushIcon)) { Icon(Icons.Default.Notifications, null, tint = Color.White, modifier = Modifier.padding(15.dp)) }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text("A SMS", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-            Text("ساخته شده با ❤️ برای شما", color = TextSecondary)
+            Text(if (english) "Made with ❤️ for you" else "ساخته شده با ❤️ برای شما", color = TextSecondary)
         }
     }
 }
@@ -166,7 +212,7 @@ private fun SectionTitle(text: String) { Text(text, color = TextSecondary, style
 
 @Composable
 private fun SettingsCard(content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = .35f), RoundedCornerShape(22.dp))) { content() }
+    Column(Modifier.fillMaxWidth().animateContentSize().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = .35f), RoundedCornerShape(22.dp))) { content() }
 }
 
 @Composable
@@ -186,12 +232,12 @@ private fun SettingRow(icon: androidx.compose.ui.graphics.vector.ImageVector, ti
 @Composable private fun DividerLine() { Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = .35f))) }
 
 @Composable
-private fun AlertLikeDialog(title: String, options: List<Pair<String, Boolean>>, onSelected: (String) -> Unit) {
+private fun AlertLikeDialog(title: String, options: List<Pair<String, Boolean>>, english: Boolean = false, onSelected: (String) -> Unit) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = { onSelected("") },
         title = { Text(title) },
         text = { Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { options.forEach { (label, selected) -> TextButton(onClick = { onSelected(label) }, modifier = Modifier.fillMaxWidth()) { Text(if (selected) "✓  $label" else label) } } } },
-        confirmButton = { TextButton(onClick = { onSelected("") }) { Text("لغو") } },
+        confirmButton = { TextButton(onClick = { onSelected("") }) { Text(if (english) "Cancel" else "لغو") } },
     )
 }
 

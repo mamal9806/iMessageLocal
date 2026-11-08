@@ -9,10 +9,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ChatDao {
-    @Query("SELECT * FROM conversations WHERE archived = 0 ORDER BY pinned DESC, updatedAt DESC")
+    @Query("SELECT * FROM conversations WHERE archived = 0 AND trashed = 0 AND spam = 0 AND blocked = 0 ORDER BY pinned DESC, updatedAt DESC")
     fun observeConversations(): Flow<List<ConversationEntity>>
 
-    @Query("SELECT * FROM conversations WHERE archived = 0 AND (name LIKE '%' || :query || '%' OR phoneNumber LIKE '%' || :query || '%' OR lastText LIKE '%' || :query || '%') ORDER BY pinned DESC, updatedAt DESC")
+    @Query("SELECT * FROM conversations WHERE archived = 0 AND trashed = 0 AND spam = 0 AND blocked = 0 AND (name LIKE '%' || :query || '%' OR phoneNumber LIKE '%' || :query || '%' OR lastText LIKE '%' || :query || '%') ORDER BY pinned DESC, updatedAt DESC")
     fun searchConversations(query: String): Flow<List<ConversationEntity>>
 
     @Query("SELECT * FROM conversations WHERE id = :id")
@@ -20,6 +20,21 @@ interface ChatDao {
 
     @Query("SELECT * FROM conversations")
     suspend fun getAllConversations(): List<ConversationEntity>
+
+    @Query("SELECT * FROM conversations ORDER BY pinned DESC, updatedAt DESC")
+    fun observeAllConversations(): Flow<List<ConversationEntity>>
+
+    @Query("UPDATE conversations SET archived=:archived, trashed=:trashed, spam=:spam, blocked=:blocked WHERE id=:id")
+    suspend fun setConversationFolder(id: Long, archived: Boolean, trashed: Boolean, spam: Boolean, blocked: Boolean)
+
+    @Query("UPDATE conversations SET unreadCount=0")
+    suspend fun markAllConversationsRead()
+
+    @Query("UPDATE conversations SET unreadCount=0 WHERE id=:id")
+    suspend fun markConversationRead(id: Long)
+
+    @Query("UPDATE conversations SET unreadCount=unreadCount + 1 WHERE id=:id")
+    suspend fun incrementUnread(id: Long)
 
     @Query("SELECT * FROM conversations WHERE phoneNumber = :number LIMIT 1")
     suspend fun findByPhone(number: String): ConversationEntity?
@@ -39,6 +54,12 @@ interface ChatDao {
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY createdAt ASC, id ASC")
     fun observeMessages(conversationId: Long): Flow<List<MessageEntity>>
 
+    @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY createdAt DESC, id DESC LIMIT 1")
+    suspend fun getLatestMessage(conversationId: Long): MessageEntity?
+
+    @Query("SELECT EXISTS(SELECT 1 FROM messages WHERE conversationId=:conversationId AND text=:text AND isOutgoing=:isOutgoing AND createdAt=:timestamp)")
+    suspend fun hasImportedDuplicate(conversationId: Long, text: String, isOutgoing: Boolean, timestamp: Long): Boolean
+
     @Query("SELECT EXISTS(SELECT 1 FROM messages WHERE conversationId=:conversationId AND text=:text AND isOutgoing=0 AND createdAt BETWEEN :from AND :to)")
     suspend fun hasIncomingDuplicate(conversationId: Long, text: String, from: Long, to: Long): Boolean
 
@@ -53,4 +74,22 @@ interface ChatDao {
 
     @Query("DELETE FROM messages WHERE id = :id")
     suspend fun deleteMessage(id: Long)
+
+    @Query("UPDATE messages SET pinned = :pinned WHERE id = :id")
+    suspend fun setMessagePinned(id: Long, pinned: Boolean)
+
+    @Insert
+    suspend fun insertScheduled(item: ScheduledSmsEntity): Long
+
+    @Query("SELECT * FROM scheduled_sms WHERE conversationId = :conversationId AND status = 'PENDING' ORDER BY scheduledAt ASC")
+    fun observeScheduled(conversationId: Long): Flow<List<ScheduledSmsEntity>>
+
+    @Query("SELECT * FROM scheduled_sms WHERE id = :id")
+    suspend fun getScheduled(id: Long): ScheduledSmsEntity?
+
+    @Query("UPDATE scheduled_sms SET status = :status WHERE id = :id")
+    suspend fun updateScheduledStatus(id: Long, status: String)
+
+    @Query("DELETE FROM scheduled_sms WHERE conversationId = :conversationId")
+    suspend fun deleteScheduledForConversation(conversationId: Long)
 }

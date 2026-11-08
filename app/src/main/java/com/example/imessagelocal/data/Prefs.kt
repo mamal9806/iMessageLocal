@@ -8,6 +8,10 @@ data class Settings(
     val sound: Boolean = true,
     val defaultSimSubscriptionId: Int = -1,
     val notificationSoundUri: String? = null,
+    val accentTheme: Int = 0,
+    val language: Int = 0,
+    val setupComplete: Boolean = false,
+    val autoMoveSpam: Boolean = false,
 )
 
 class Prefs(context: Context) {
@@ -19,6 +23,10 @@ class Prefs(context: Context) {
         sound = prefs.getBoolean("sound", true),
         defaultSimSubscriptionId = prefs.getInt("default_sim", -1),
         notificationSoundUri = prefs.getString("notification_sound_uri", null),
+        accentTheme = prefs.getInt("accent_theme", 0),
+        language = prefs.getInt("language", 0),
+        setupComplete = prefs.getBoolean("setup_complete", false),
+        autoMoveSpam = prefs.getBoolean("auto_move_spam", false),
     )
 
     fun save(s: Settings) {
@@ -28,6 +36,10 @@ class Prefs(context: Context) {
             .putBoolean("sound", s.sound)
             .putInt("default_sim", s.defaultSimSubscriptionId)
             .putString("notification_sound_uri", s.notificationSoundUri)
+            .putInt("accent_theme", s.accentTheme)
+            .putInt("language", s.language)
+            .putBoolean("setup_complete", s.setupComplete)
+            .putBoolean("auto_move_spam", s.autoMoveSpam)
             .apply()
     }
 }

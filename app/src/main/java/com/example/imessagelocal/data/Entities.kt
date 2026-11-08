@@ -17,6 +17,10 @@ data class ConversationEntity(
     val updatedAt: Long = System.currentTimeMillis(),
     val simSubscriptionId: Int? = null,
     @ColumnInfo(defaultValue = "0") val archived: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val trashed: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val spam: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val blocked: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val unreadCount: Int = 0,
     @ColumnInfo(defaultValue = "1") val notificationsEnabled: Boolean = true,
     val contactUri: String? = null,
 )
@@ -44,4 +48,17 @@ data class MessageEntity(
     val replyPreview: String? = null,
     @ColumnInfo(defaultValue = "'LOCAL'") val deliveryState: String = "LOCAL",
     val simSubscriptionId: Int? = null,
+    @ColumnInfo(defaultValue = "0") val pinned: Boolean = false,
+)
+
+
+@Entity(tableName = "scheduled_sms")
+data class ScheduledSmsEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val conversationId: Long,
+    val phoneNumber: String,
+    val text: String,
+    val scheduledAt: Long,
+    val simSubscriptionId: Int? = null,
+    @ColumnInfo(defaultValue = "'PENDING'") val status: String = "PENDING",
 )

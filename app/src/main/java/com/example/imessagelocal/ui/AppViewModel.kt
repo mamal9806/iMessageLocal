@@ -2,6 +2,9 @@ package com.example.imessagelocal.ui
 
 import android.app.Application
 import android.telephony.SmsManager
+import android.provider.Telephony
+import android.provider.ContactsContract
+import android.net.Uri
 import android.os.Build
 import android.app.PendingIntent
 import android.content.Intent
@@ -17,6 +20,8 @@ import com.example.imessagelocal.data.ConversationEntity
 import com.example.imessagelocal.data.MessageEntity
 import com.example.imessagelocal.data.Prefs
 import com.example.imessagelocal.data.Settings
+import com.example.imessagelocal.data.ScheduledSmsEntity
+import android.app.AlarmManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -46,11 +51,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         .flatMapLatest { repo.conversations(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private val everything: StateFlow<List<ConversationEntity>> = repo.conversations("")
+    private val everything: StateFlow<List<ConversationEntity>> = repo.allConversations()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val allConversations: StateFlow<List<ConversationEntity>> = everything
 
     val messages: StateFlow<List<MessageEntity>> = openId
         .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else repo.messages(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val scheduledMessages: StateFlow<List<ScheduledSmsEntity>> = openId
+        .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else repo.scheduledMessages(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun updateSettings(s: Settings) {
@@ -64,6 +75,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun open(id: Long?) {
         openId.value = id
+        if (id != null) viewModelScope.launch { repo.markRead(id) }
+    }
+
+    fun moveConversationToFolder(id: Long, folder: String) {
+        viewModelScope.launch { repo.moveConversationToFolder(id, folder) }
+    }
+
+    fun markAllConversationsRead() {
+        viewModelScope.launch { repo.markAllRead() }
+    }
+
+    fun markConversationRead(id: Long) {
+        viewModelScope.launch { repo.markRead(id) }
+    }
+
+    fun permanentlyDeleteConversation(id: Long) {
+        viewModelScope.launch { repo.deleteConversation(id) }
     }
 
     fun conversationName(id: Long): String =
@@ -134,7 +162,75 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun findSavedContactName(address: String): String? {
+        if (address.isBlank()) return null
+        return try {
+            val lookupUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(address))
+            getApplication<Application>().contentResolver.query(
+                lookupUri,
+                arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME),
+                null, null, null,
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0)?.takeIf { it.isNotBlank() } else null
+            }
+        } catch (_: Exception) { null }
+    }
+
+    fun restorePreviousMessages() {
+        val context = getApplication<Application>()
+        if (Telephony.Sms.getDefaultSmsPackage(context) != context.packageName) {
+            smsStatus = "برای بازیابی پیام‌های قبلی، ابتدا A SMS را برنامه پیش‌فرض پیامک کنید."
+            return
+        }
+        viewModelScope.launch {
+            try {
+                var imported = 0
+                val projection = arrayOf(Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms.TYPE)
+                context.contentResolver.query(Telephony.Sms.CONTENT_URI, projection, null, null, Telephony.Sms.DATE + " ASC")?.use { cursor ->
+                    val addressCol = cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)
+                    val bodyCol = cursor.getColumnIndexOrThrow(Telephony.Sms.BODY)
+                    val dateCol = cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)
+                    val typeCol = cursor.getColumnIndexOrThrow(Telephony.Sms.TYPE)
+                    while (cursor.moveToNext()) {
+                        val type = cursor.getInt(typeCol)
+                        if (type == Telephony.Sms.MESSAGE_TYPE_INBOX || type == Telephony.Sms.MESSAGE_TYPE_SENT ||
+                            type == Telephony.Sms.MESSAGE_TYPE_OUTBOX || type == Telephony.Sms.MESSAGE_TYPE_FAILED ||
+                            type == Telephony.Sms.MESSAGE_TYPE_QUEUED) {
+                            val address = cursor.getString(addressCol).orEmpty()
+                            val contactName = findSavedContactName(address)
+                            repo.importSms(address, cursor.getString(bodyCol).orEmpty(),
+                                cursor.getLong(dateCol), type != Telephony.Sms.MESSAGE_TYPE_INBOX, contactName)
+                            imported++
+                        }
+                    }
+                }
+                smsStatus = "بازیابی پیام‌ها انجام شد. $imported پیام بررسی شد."
+            } catch (e: SecurityException) {
+                smsStatus = "دسترسی خواندن پیامک‌ها داده نشده است."
+            } catch (e: Exception) {
+                smsStatus = "بازیابی ناموفق بود: ${e.message ?: "خطای نامشخص"}"
+            }
+        }
+    }
+
     fun clearSmsStatus() { smsStatus = "" }
+
+    fun scheduleSms(conversationId: Long, text: String, scheduledAt: Long) {
+        val clean = text.trim()
+        if (clean.isEmpty() || scheduledAt <= System.currentTimeMillis()) return
+        viewModelScope.launch {
+            val conversation = repo.getConversation(conversationId) ?: return@launch
+            if (conversation.phoneNumber.isBlank()) { smsStatus = "برای این گفتگو شماره تلفن ثبت نشده است."; return@launch }
+            val subId = conversation.simSubscriptionId?.takeIf { it >= 0 } ?: settings.defaultSimSubscriptionId.takeIf { it >= 0 }
+            val id = repo.addScheduledSms(conversationId, conversation.phoneNumber, clean, scheduledAt, subId)
+            val alarmIntent = Intent(getApplication(), com.example.imessagelocal.ScheduledSmsReceiver::class.java).putExtra("schedule_id", id)
+            val pending = PendingIntent.getBroadcast(getApplication(), id.toInt(), alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            getApplication<Application>().getSystemService(AlarmManager::class.java).setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, scheduledAt, pending)
+            smsStatus = "پیام برای زمان انتخاب‌شده زمان‌بندی شد."
+        }
+    }
+
+    fun cancelScheduledSms(id: Long) { viewModelScope.launch { repo.cancelScheduledSms(id) } }
 
     fun logIncoming(conversationId: Long, text: String) {
         val clean = text.trim()
@@ -154,6 +250,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteMessage(message: MessageEntity) {
         viewModelScope.launch { repo.deleteMessage(message) }
+    }
+
+    fun toggleMessagePin(message: MessageEntity) {
+        viewModelScope.launch { repo.toggleMessagePin(message) }
     }
 
     fun togglePin(conversation: ConversationEntity) {

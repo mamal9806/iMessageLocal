@@ -7,13 +7,28 @@ class ChatRepository(private val dao: ChatDao) {
     fun conversations(query: String) =
         if (query.isBlank()) dao.observeConversations() else dao.searchConversations(query.trim())
 
+    fun allConversations() = dao.observeAllConversations()
+
+    suspend fun moveConversationToFolder(id: Long, folder: String) {
+        dao.setConversationFolder(
+            id,
+            archived = folder == "archive",
+            trashed = folder == "trash",
+            spam = folder == "spam",
+            blocked = folder == "blocked",
+        )
+    }
+
+    suspend fun markAllRead() = dao.markAllConversationsRead()
+    suspend fun markRead(id: Long) = dao.markConversationRead(id)
+
     fun messages(conversationId: Long) = dao.observeMessages(conversationId)
 
     suspend fun createConversation(name: String, phoneNumber: String): Long {
         val cleanNumber = phoneNumber.trim()
+        val normalized = normalizeAddress(cleanNumber)
         val existing = dao.getAllConversations().firstOrNull {
-            cleanNumber.isNotBlank() && it.phoneNumber.isNotBlank() &&
-                PhoneNumberUtils.compare(it.phoneNumber, cleanNumber)
+            normalized.isNotBlank() && normalizeAddress(it.phoneNumber) == normalized
         }
         if (existing != null) {
             if (name.isNotBlank() && existing.name != name) dao.updateConversation(existing.copy(name = name))
@@ -24,10 +39,18 @@ class ChatRepository(private val dao: ChatDao) {
 
     suspend fun getConversation(id: Long) = dao.getConversation(id)
 
-    suspend fun receiveSms(address: String, body: String, timestamp: Long, contactName: String? = null): Long {
+    fun scheduledMessages(conversationId: Long) = dao.observeScheduled(conversationId)
+
+    suspend fun addScheduledSms(conversationId: Long, phoneNumber: String, text: String, scheduledAt: Long, subId: Int?): Long =
+        dao.insertScheduled(ScheduledSmsEntity(conversationId = conversationId, phoneNumber = phoneNumber, text = text, scheduledAt = scheduledAt, simSubscriptionId = subId))
+
+    suspend fun cancelScheduledSms(id: Long) = dao.updateScheduledStatus(id, "CANCELLED")
+
+    suspend fun receiveSms(address: String, body: String, timestamp: Long, contactName: String? = null, markAsSpam: Boolean = false): Long {
         val number = address.trim()
+        val normalized = normalizeAddress(number)
         var conversation = dao.getAllConversations().firstOrNull {
-            it.phoneNumber.isNotBlank() && PhoneNumberUtils.compare(it.phoneNumber, number)
+            it.phoneNumber.isNotBlank() && normalizeAddress(it.phoneNumber) == normalized
         }
         if (conversation == null) {
             val id = dao.insertConversation(ConversationEntity(name = number, phoneNumber = number, avatarColor = AVATAR_COLORS.random()))
@@ -37,11 +60,34 @@ class ChatRepository(private val dao: ChatDao) {
             conversation = conversation.copy(name = contactName)
             dao.updateConversation(conversation)
         }
+        if (conversation.blocked || conversation.trashed) return conversation.id
+        if (markAsSpam && !conversation.spam) {
+            conversation = conversation.copy(spam = true)
+            dao.updateConversation(conversation)
+        }
         if (!dao.hasIncomingDuplicate(conversation.id, body, timestamp - 5000, timestamp + 5000)) {
             dao.insertMessage(MessageEntity(conversationId = conversation.id, text = body, isOutgoing = false, createdAt = timestamp, deliveryState = "RECEIVED"))
-            dao.updateConversation(conversation.copy(lastText = body, updatedAt = timestamp))
+            dao.updateConversation(conversation.copy(lastText = body, updatedAt = timestamp, unreadCount = conversation.unreadCount + 1))
         }
         return conversation.id
+    }
+
+    suspend fun importSms(address: String, body: String, timestamp: Long, outgoing: Boolean, contactName: String? = null) {
+        val number = address.trim()
+        if (number.isBlank() || body.isBlank()) return
+        val normalized = normalizeAddress(number)
+        val existing = dao.getAllConversations().firstOrNull {
+            it.phoneNumber.isNotBlank() && normalizeAddress(it.phoneNumber) == normalized
+        }
+        val conversationId = existing?.id ?: createConversation(contactName?.takeIf { it.isNotBlank() } ?: number, number)
+        if (existing?.let { it.blocked || it.spam || it.trashed } == true) return
+        if (existing != null && !contactName.isNullOrBlank() && existing.name != contactName) {
+            dao.updateConversation(existing.copy(name = contactName))
+        }
+        if (dao.hasImportedDuplicate(conversationId, body, outgoing, timestamp)) return
+        dao.insertMessage(MessageEntity(conversationId = conversationId, text = body, isOutgoing = outgoing, createdAt = timestamp, deliveryState = if (outgoing) "SENT" else "RECEIVED"))
+        val conversation = dao.getConversation(conversationId) ?: return
+        if (conversation.lastText.isBlank() || timestamp >= conversation.updatedAt) dao.updateConversation(conversation.copy(lastText = body, updatedAt = timestamp))
     }
 
     suspend fun recordOutgoing(conversationId: Long, text: String, subId: Int?): Long {
@@ -76,12 +122,33 @@ class ChatRepository(private val dao: ChatDao) {
 
     suspend fun editMessage(message: MessageEntity, text: String) = dao.editMessage(message.id, text)
 
-    suspend fun deleteMessage(message: MessageEntity) = dao.deleteMessage(message.id)
+    suspend fun deleteMessage(message: MessageEntity) {
+        dao.deleteMessage(message.id)
+        dao.getConversation(message.conversationId)?.let { conversation ->
+            val latest = dao.getLatestMessage(message.conversationId)
+            dao.updateConversation(conversation.copy(
+                lastText = latest?.text.orEmpty(),
+                updatedAt = latest?.createdAt ?: conversation.updatedAt,
+            ))
+        }
+    }
+
+    suspend fun toggleMessagePin(message: MessageEntity) = dao.setMessagePinned(message.id, !message.pinned)
 
     suspend fun togglePin(conversation: ConversationEntity) =
         dao.updateConversation(conversation.copy(pinned = !conversation.pinned))
 
-    suspend fun deleteConversation(id: Long) = dao.deleteConversation(id)
+    suspend fun deleteConversation(id: Long) {
+        dao.deleteScheduledForConversation(id)
+        dao.deleteConversation(id)
+    }
+
+    private fun normalizeAddress(value: String): String {
+        val trimmed = value.trim()
+        val normalized = PhoneNumberUtils.normalizeNumber(trimmed)
+        if (normalized.isNotBlank()) return if (normalized.startsWith("00")) "+${normalized.drop(2)}" else normalized
+        return trimmed.lowercase()
+    }
 
     companion object {
         val AVATAR_COLORS = listOf(
