@@ -100,11 +100,11 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
     val conversations by vm.allConversations.collectAsStateWithLifecycle()
     val currentConversation = conversations.firstOrNull { it.id == conversationId }
     val selectedSubId = currentConversation?.simSubscriptionId?.takeIf { it >= 0 } ?: vm.settings.defaultSimSubscriptionId.takeIf { it >= 0 }
+    val english = vm.settings.language == 1
     val selectedSimLabel = selectedSubId?.let { id -> simOptions.indexOfFirst { it.subscriptionId == id }.takeIf { it >= 0 }?.let { if (english) "SIM ${it + 1}" else "سیم ${it + 1}" } } ?: if (selectedSubId == null) (if (english) "Auto SIM" else "سیم خودکار") else (if (english) "Selected SIM" else "سیم انتخاب‌شده")
     var showSimPicker by remember { mutableStateOf(false) }
     var showTemplates by remember { mutableStateOf(false) }
     var showStickerPicker by remember { mutableStateOf(false) }
-    val english = vm.settings.language == 1
 
     val openSchedulePicker = {
         val initial = Calendar.getInstance().apply { add(Calendar.MINUTE, 5) }
