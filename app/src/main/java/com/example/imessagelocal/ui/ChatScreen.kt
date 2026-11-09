@@ -143,7 +143,7 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 },
                 modifier = Modifier.padding(bottom = 4.dp),
             ) {
-                Icon(Icons.Default.SimCard, contentDescription = "سیم‌کارت", modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Call, contentDescription = "سیم‌کارت", modifier = Modifier.size(18.dp))
                 Text("SIM", modifier = Modifier.padding(start = 4.dp))
             }
             Spacer(Modifier.width(6.dp))
