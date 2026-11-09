@@ -26,19 +26,24 @@ val SuccessGreen = Color(0xFF28D17C)
 @Composable
 fun IMessageTheme(darkTheme: Boolean = isSystemInDarkTheme(), fontScale: Float = 1f, content: @Composable () -> Unit) {
     val colors = if (darkTheme) darkColorScheme(
-        primary = IOSBlue, onPrimary = Color.White, background = DeepNavy, onBackground = TextPrimary,
-        surface = PanelNavy, onSurface = TextPrimary, surfaceVariant = PanelNavy2, onSurfaceVariant = TextSecondary,
-        outline = DividerBlue, error = Color(0xFFFF5C65),
+        primary = IOSBlue, onPrimary = Color.White,
+        background = Color(0xFF05070D), onBackground = Color(0xFFF4F6FC),
+        surface = Color(0xFF111827), onSurface = Color(0xFFF4F6FC),
+        surfaceVariant = Color(0xFF1B2638), onSurfaceVariant = Color(0xFFB8C3D6),
+        outline = Color(0xFF34445E), error = Color(0xFFFF6673),
     ) else androidx.compose.material3.lightColorScheme(
-        primary = IOSBlue, onPrimary = Color.White, background = Color(0xFFF5F7FC), onBackground = Color(0xFF101522),
-        surface = Color.White, onSurface = Color(0xFF101522), surfaceVariant = Color(0xFFE9EEF7),
-        onSurfaceVariant = Color(0xFF59667D), outline = Color(0xFFD0D7E5), error = Color(0xFFD92D3A),
+        primary = Color(0xFF0866D8), onPrimary = Color.White,
+        background = Color(0xFFF4F6FA), onBackground = Color(0xFF111827),
+        surface = Color.White, onSurface = Color(0xFF111827),
+        surfaceVariant = Color(0xFFE8EDF5), onSurfaceVariant = Color(0xFF46546A),
+        outline = Color(0xFFD2D9E4), error = Color(0xFFBA1A1A),
     )
     val density = LocalDensity.current
-    val typography = Typography().copy(
-        bodyLarge = Typography().bodyLarge.copy(fontFamily = FontFamily.Default),
-        bodyMedium = Typography().bodyMedium.copy(fontFamily = FontFamily.Default),
-        titleLarge = Typography().titleLarge.copy(fontFamily = FontFamily.Default),
+    val baseTypography = Typography()
+    val typography = baseTypography.copy(
+        bodyLarge = baseTypography.bodyLarge.copy(fontFamily = FontFamily.Default),
+        bodyMedium = baseTypography.bodyMedium.copy(fontFamily = FontFamily.Default),
+        titleLarge = baseTypography.titleLarge.copy(fontFamily = FontFamily.Default),
     )
     CompositionLocalProvider(
         LocalLayoutDirection provides LayoutDirection.Rtl,

@@ -78,12 +78,12 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
         }
     }
 
-    Column(Modifier.fillMaxSize().padding(bottom = 92.dp)) {
+    Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 20.dp, top = 18.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "بازگشت", tint = TextPrimary) }
             Text("تنظیمات", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         }
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp)) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp)) {
             SettingsHero()
             SectionTitle("ظاهر برنامه")
             SettingsCard {
@@ -166,14 +166,14 @@ private fun SectionTitle(text: String) { Text(text, color = TextSecondary, style
 
 @Composable
 private fun SettingsCard(content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, Color.White.copy(alpha = .06f), RoundedCornerShape(22.dp))) { content() }
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = .35f), RoundedCornerShape(22.dp))) { content() }
 }
 
 @Composable
 private fun SettingRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, value: String, onClick: (() -> Unit)?) {
     val rowModifier = if (onClick != null) Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 15.dp) else Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 15.dp)
     Row(rowModifier, verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(alpha = .07f)), contentAlignment = Alignment.Center) { Icon(icon, null, tint = IOSBlue, modifier = Modifier.size(20.dp)) }
+        Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) { Icon(icon, null, tint = IOSBlue, modifier = Modifier.size(20.dp)) }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.Medium)

@@ -3,6 +3,9 @@ package com.example.imessagelocal.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,7 +23,7 @@ fun AppRoot(vm: AppViewModel) {
 
     BackHandler(enabled = openId != null) { vm.open(null) }
 
-    AppBackground {
+    AppBackground(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
         Box(Modifier.fillMaxSize()) {
             when {
                 openId != null -> ChatScreen(vm, openId!!, onBack = { vm.open(null) })

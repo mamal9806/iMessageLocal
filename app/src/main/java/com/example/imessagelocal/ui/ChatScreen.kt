@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -133,6 +134,19 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
             Modifier.fillMaxWidth().imePadding().padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
+            OutlinedButton(
+                onClick = {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                        simOptions = activeSims(context)
+                        showSimPicker = true
+                    } else simPermission.launch(Manifest.permission.READ_PHONE_STATE)
+                },
+                modifier = Modifier.padding(bottom = 4.dp),
+            ) {
+                Icon(Icons.Default.SimCard, contentDescription = "سیم‌کارت", modifier = Modifier.size(18.dp))
+                Text("SIM", modifier = Modifier.padding(start = 4.dp))
+            }
+            Spacer(Modifier.width(6.dp))
             OutlinedTextField(
                 value = draft,
                 onValueChange = { draft = it },
@@ -141,9 +155,9 @@ fun ChatScreen(vm: AppViewModel, conversationId: Long, onBack: () -> Unit) {
                 shape = RoundedCornerShape(25.dp),
                 maxLines = 5,
                 colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = Color.White.copy(alpha = .05f),
-                    focusedContainerColor = Color.White.copy(alpha = .07f),
-                    unfocusedBorderColor = Color.White.copy(alpha = .10f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                     focusedBorderColor = IOSBlue,
                 ),
             )

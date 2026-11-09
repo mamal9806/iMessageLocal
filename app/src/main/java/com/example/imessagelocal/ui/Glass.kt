@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.dp\nimport androidx.compose.material3.MaterialTheme
 
 fun Modifier.liquidGlass(radius: Int = 22): Modifier {
     val shape = RoundedCornerShape(radius.dp)
@@ -39,10 +39,9 @@ fun AppBackground(modifier: Modifier = Modifier, content: @Composable () -> Unit
         modifier
             .fillMaxSize()
             .background(
-                Brush.radialGradient(
-                    colors = listOf(Color(0xFF101D3E), DeepNavy, Color.Black),
-                    radius = 1200f,
-                ),
+                if (androidx.compose.foundation.isSystemInDarkTheme() && MaterialTheme.colorScheme.background == DeepNavy)
+                    Brush.radialGradient(colors = listOf(Color(0xFF17243D), DeepNavy, Color(0xFF05070D)), radius = 1200f)
+                else Brush.linearGradient(listOf(MaterialTheme.colorScheme.background, MaterialTheme.colorScheme.surfaceVariant))
             ),
     ) { content() }
 }
