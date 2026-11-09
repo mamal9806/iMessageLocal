@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp\nimport androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.unit.dp`r`nimport androidx.compose.material3.MaterialTheme
 
 fun Modifier.liquidGlass(radius: Int = 22): Modifier {
     val shape = RoundedCornerShape(radius.dp)
