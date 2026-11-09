@@ -1,45 +1,22 @@
-# A SMS — redesigned offline Android SMS client
+# A SMS 1.0.0
 
-A SMS is an offline-first Android SMS application built with Kotlin, Jetpack Compose, Material 3, MVVM and Room. This revision keeps the existing local database and SMS transport layer while replacing the UI with a dark, Persian RTL, glass/gradient visual system based on the supplied reference image.
+برنامه پیامک محلی اندروید با Kotlin و Jetpack Compose.
 
-## Main screens
+## ساخت
+- Android Studio با JDK 17
+- Android SDK Platform 35
+- از Android Studio گزینه Sync Project with Gradle Files و سپس Build > Make Project را اجرا کنید.
+- در این سورس، Gradle Wrapper و پوشه gradle/wrapper موجود نیست؛ برای ساخت خط فرمان باید Wrapper با Gradle نصب‌شده تولید شود (`gradle wrapper`) یا پروژه از Android Studio با Gradle نصب‌شده باز شود.
 
-- پیام‌ها: conversation list, search, pinned conversations, contact picker and new conversation.
-- گفت‌وگو: real SMS sending, multipart SMS, delivery state, reply/edit/delete actions and per-conversation SIM selection.
-- مخاطبین: reads the device phone contacts after permission is granted and opens/creates real SMS conversations.
-- تنظیمات: notification sound, notification permission, contact permissions, default SIM, default SMS role and app information.
+## قابلیت‌ها و اصلاحات این نسخه
+- جست‌وجوی مخاطبین بر اساس نام و شماره و بازکردن گفت‌وگو با لمس مخاطب
+- تم روشن/تاریک/پیروی از سیستم و حفظ انتخاب در تنظیمات
+- اطلاعات درباره برنامه: A SMS، سازنده mamaD (kazeroon)، ایمیل pishi1403@gmail.com، نسخه 1.0.0
+- افزودن اقدام پاسخ سریع RemoteInput به اعلان SMS ورودی
+- حفظ مسیر ارسال SMS، دریافت SMS، ذخیره Room و انتخاب سیم‌کارت موجود در سورس
 
-## SMS behavior retained
-
-- Real carrier SMS through `SmsManager`.
-- Multipart SMS.
-- Incoming `SMS_DELIVER` handling.
-- Room persistence and conversation matching by phone number.
-- Contact-name lookup for incoming senders when `READ_CONTACTS` is granted.
-- Default SMS role request flow.
-- Per-conversation and default SIM subscription selection.
-- Sent-to-network / delivered / failed states where Android and the carrier provide them.
-- Notification channels and conversation deep links.
-- No INTERNET permission, account, server, online chat, advertising or cloud dependency.
-
-## Build
-
-Open the project in Android Studio with JDK 17 and Android SDK 35. The project uses Android Gradle Plugin 8.5.2 and Kotlin 2.0.20.
-
-Run:
-
-```text
-:app:assembleDebug
-```
-
-A Gradle wrapper is not bundled in this source archive. In an Android Studio installation, use the IDE's configured Gradle distribution or generate the wrapper with the project's configured Gradle version.
-
-## Testing status
-
-The source was statically reviewed and the SMS/data paths from the supplied project were retained. A local Android APK build could not be executed in this environment because Gradle and the Android SDK are not installed here. Therefore this delivery does **not** claim a locally successful APK build or real-device SMS test.
-
-For real-device validation, install as the default SMS application, grant SMS/contacts/notification permissions, verify SIM selection, send a multipart message, receive an SMS, and confirm the system SMS provider/notification behavior.
-
-## Platform limitation
-
-`DELIVERED` is only shown when the carrier returns a delivery report. `SENT_TO_NETWORK` means Android/carrier accepted the send request; it does not prove that the recipient read or received the message.
+## محدودیت‌ها و نکات
+- پاسخ سریع فقط در صورتی ارسال می‌شود که مجوز SEND_SMS اعطا شده باشد و دستگاه سیم‌کارت/سرویس پیامک داشته باشد.
+- برنامه برای دریافت SMS در Android باید Default SMS App باشد. کاربر باید نقش SMS را از تنظیمات برنامه تأیید کند.
+- نتیجه تحویل SMS از اپراتور تضمین‌شده نیست؛ callback فقط وضعیت گزارش‌شده توسط شبکه را ذخیره می‌کند.
+- ساخت APK و تست روی دستگاه واقعی در این محیط انجام نشده است. قبل از انتشار، Build و تست ارسال/دریافت، دو سیم‌کارت، مجوزها و اعلان‌ها روی دستگاه واقعی الزامی است.

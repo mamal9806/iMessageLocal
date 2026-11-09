@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -48,6 +51,7 @@ fun ContactsScreen(vm: AppViewModel, onOpen: (Long) -> Unit) {
     val context = LocalContext.current
     var contacts by remember { mutableStateOf<List<PhoneContact>>(emptyList()) }
     var denied by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) contacts = loadContacts(context) else denied = true
     }
@@ -57,7 +61,8 @@ fun ContactsScreen(vm: AppViewModel, onOpen: (Long) -> Unit) {
     }
 
     Column(Modifier.fillMaxSize().padding(bottom = 92.dp)) {
-        Text("مخاطبین", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp))
+        Text("مخاطبین", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
+        OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), singleLine = true, placeholder = { Text("جستجوی نام یا شماره") }, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface))
         if (denied) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -67,8 +72,8 @@ fun ContactsScreen(vm: AppViewModel, onOpen: (Long) -> Unit) {
             }
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
-                items(contacts, key = { it.id }) { c ->
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                items(contacts.filter { it.name.contains(query, true) || it.number.contains(query, true) }, key = { "${it.id}:${it.number}" }) { c ->
+                    Row(Modifier.fillMaxWidth().clickable { vm.createConversation(c.name, c.number) }.padding(horizontal = 18.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(50.dp).clip(CircleShape).background(Color(0xFF3D73B9)), contentAlignment = Alignment.Center) {
                             Icon(Icons.Default.Person, null, tint = Color.White)
                         }
@@ -98,7 +103,7 @@ private fun loadContacts(context: android.content.Context): List<PhoneContact> {
         val seen = HashSet<String>()
         while (c.moveToNext()) {
             val n = c.getString(number).orEmpty()
-            if (n.isNotBlank() && seen.add(n)) result += PhoneContact(c.getLong(id), c.getString(name).orEmpty(), n)
+            if (n.isNotBlank() && seen.add(android.telephony.PhoneNumberUtils.normalizeNumber(n).ifBlank { n.filter { ch -> ch.isDigit() } })) result += PhoneContact(c.getLong(id), c.getString(name).orEmpty(), n)
         }
     }
     return result

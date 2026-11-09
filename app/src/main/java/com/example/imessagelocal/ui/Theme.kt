@@ -18,8 +18,8 @@ val NeonBlue = Color(0xFF1498FF)
 val DeepNavy = Color(0xFF050B19)
 val PanelNavy = Color(0xFF0C1428)
 val PanelNavy2 = Color(0xFF111C35)
-val TextPrimary = Color(0xFFF7F9FF)
-val TextSecondary = Color(0xFF9AA8C5)
+@get:Composable val TextPrimary: Color get() = MaterialTheme.colorScheme.onSurface
+@get:Composable val TextSecondary: Color get() = MaterialTheme.colorScheme.onSurfaceVariant
 val DividerBlue = Color(0xFF213052)
 val SuccessGreen = Color(0xFF28D17C)
 

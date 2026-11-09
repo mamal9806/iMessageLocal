@@ -44,6 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -84,6 +85,16 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
         }
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp)) {
             SettingsHero()
+            SectionTitle("ظاهر برنامه")
+            SettingsCard {
+                listOf(0 to "پیروی از سیستم", 1 to "روشن", 2 to "تاریک").forEach { (mode, label) ->
+                    Row(Modifier.fillMaxWidth().clickable { vm.updateSettings(s.copy(darkMode = mode)) }.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
+                        RadioButton(selected = s.darkMode == mode, onClick = { vm.updateSettings(s.copy(darkMode = mode)) })
+                    }
+                }
+            }
+            Spacer(Modifier.height(14.dp))
             Spacer(Modifier.height(18.dp))
             SectionTitle("عمومی")
             SettingsCard {
@@ -108,7 +119,7 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
             Spacer(Modifier.height(14.dp))
             SectionTitle("اطلاعات بیشتر")
             SettingsCard {
-                SettingRow(Icons.Default.Info, "درباره برنامه", "A SMS · نسخه 2.0.0") { showAbout = true }
+                SettingRow(Icons.Default.Info, "درباره برنامه", "A SMS · نسخه 1.0.0") { showAbout = true }
                 DividerLine()
                 SettingRow(Icons.Default.Public, "برنامه پیش‌فرض پیامک", "برای دریافت پیامک واقعی") {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -134,7 +145,7 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
         }
     }
     if (showAbout) {
-        AlertLikeDialog("درباره A SMS", listOf("نسخه 2.0.0" to false, "پیام‌رسان آفلاین · بدون حساب و سرور" to false)) { showAbout = false }
+        AlertLikeDialog("درباره A SMS", listOf("نسخه 1.0.0" to false, "سازنده: mamaD (kazeroon)" to false, "ایمیل: pishi1403@gmail.com" to false)) { showAbout = false }
     }
 }
 
@@ -155,7 +166,7 @@ private fun SectionTitle(text: String) { Text(text, color = TextSecondary, style
 
 @Composable
 private fun SettingsCard(content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color(0xAA101A31)).border(1.dp, Color.White.copy(alpha = .06f), RoundedCornerShape(22.dp))) { content() }
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, Color.White.copy(alpha = .06f), RoundedCornerShape(22.dp))) { content() }
 }
 
 @Composable
@@ -172,7 +183,7 @@ private fun SettingRow(icon: androidx.compose.ui.graphics.vector.ImageVector, ti
     }
 }
 
-@Composable private fun DividerLine() { Spacer(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = .05f))) }
+@Composable private fun DividerLine() { Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = .35f))) }
 
 @Composable
 private fun AlertLikeDialog(title: String, options: List<Pair<String, Boolean>>, onSelected: (String) -> Unit) {

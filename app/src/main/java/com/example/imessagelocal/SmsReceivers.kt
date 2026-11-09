@@ -57,7 +57,7 @@ class SmsDeliverReceiver : BroadcastReceiver() {
                     }
                     val conversation = repo.getConversation(conversationId)
                     val settings = Prefs(context).load()
-                    Notifier.notifyIncoming(context, conversation?.name ?: contactName ?: address, body, settings.sound, conversationId, settings.notificationSoundUri)
+                    Notifier.notifyIncoming(context, conversation?.name ?: contactName ?: address, body, settings.sound, conversationId, settings.notificationSoundUri, address)
                 }
             } finally { pending.finish() }
         }
